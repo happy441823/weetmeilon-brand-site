@@ -1,0 +1,2 @@
+productId,productName,status,visible,categoryId,seriesId,tmallUrl,jdUrl,reviewStatus,reason
+half-body-public-review,半身款（待官方链接复核）,draft,false,half-body,,,"",needs_review,用户说明已上架；公开页面未确认商品级链接，暂不前台展示

@@ -1,0 +1,2 @@
+reviewId,tmallProductName,tmallProductUrl,jdProductName,jdProductUrl,matchStatus,confidence,reason,reviewStatus
+half-body-public-review,半身款待确认,,半身款待确认,,needs_review,0,公开页面未返回可验证商品详情页；不得强行合并天猫与京东同款关系,open
