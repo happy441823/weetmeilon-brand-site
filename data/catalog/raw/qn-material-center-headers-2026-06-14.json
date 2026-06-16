@@ -1,0 +1,365 @@
+{
+  "headers": [
+    {
+      "i": 0,
+      "tag": "TH",
+      "text": "商品|卖点介绍",
+      "cls": "next-table-cell next-table-header-node next-table-fix-left next-table-fix-left-last"
+    },
+    {
+      "i": 1,
+      "tag": "TH",
+      "text": "主图",
+      "cls": "next-table-cell next-table-header-node"
+    },
+    {
+      "i": 2,
+      "tag": "TH",
+      "text": "视频",
+      "cls": "next-table-cell next-table-header-node"
+    },
+    {
+      "i": 3,
+      "tag": "TH",
+      "text": "白底图",
+      "cls": "next-table-cell next-table-header-node"
+    },
+    {
+      "i": 4,
+      "tag": "TH",
+      "text": "透明图",
+      "cls": "next-table-cell next-table-header-node"
+    },
+    {
+      "i": 5,
+      "tag": "TH",
+      "text": "场景图",
+      "cls": "next-table-cell next-table-header-node"
+    },
+    {
+      "i": 6,
+      "tag": "TH",
+      "text": "品牌logo",
+      "cls": "next-table-cell next-table-header-node"
+    },
+    {
+      "i": 7,
+      "tag": "TH",
+      "text": "活动素材",
+      "cls": "next-table-cell next-table-header-node"
+    },
+    {
+      "i": 8,
+      "tag": "TD",
+      "text": "出售中|倒模名器干燥棒一根|ID|872961316553|¥39.9",
+      "cls": "next-table-cell first next-table-fix-left next-table-fix-left-last"
+    },
+    {
+      "i": 9,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 10,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 11,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 12,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 13,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 14,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 15,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell last"
+    },
+    {
+      "i": 16,
+      "tag": "TD",
+      "text": "出售中|蜜女郎 补运费差价专用链接，差多少拍多少|ID|825951756008|¥1",
+      "cls": "next-table-cell first next-table-fix-left next-table-fix-left-last"
+    },
+    {
+      "i": 17,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 18,
+      "tag": "TD",
+      "text": "优质品",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 19,
+      "tag": "TD",
+      "text": "审核不通过",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 20,
+      "tag": "TD",
+      "text": "审核不通过",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 21,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 22,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 23,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell last"
+    },
+    {
+      "i": 24,
+      "tag": "TD",
+      "text": "出售中|半身倒模收纳带【可装密码锁】隐私方便收藏|ID|851429867792|¥18 - 119|大促活动商品",
+      "cls": "next-table-cell first next-table-fix-left next-table-fix-left-last"
+    },
+    {
+      "i": 25,
+      "tag": "TD",
+      "text": "2",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 26,
+      "tag": "TD",
+      "text": "潜力品",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 27,
+      "tag": "TD",
+      "text": "审核不通过",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 28,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 29,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 30,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 31,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell last"
+    },
+    {
+      "i": 32,
+      "tag": "TD",
+      "text": "出售中|全自动夹吸飞机杯男用真人比例倒臀模成人情趣玩具可插入充气娃娃|ID|1046620353522|¥968 - 1458|大促活动商品",
+      "cls": "next-table-cell first next-table-fix-left next-table-fix-left-last"
+    },
+    {
+      "i": 33,
+      "tag": "TD",
+      "text": "10",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 34,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 35,
+      "tag": "TD",
+      "text": "审核不通过",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 36,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 37,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 38,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 39,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell last"
+    },
+    {
+      "i": 40,
+      "tag": "TD",
+      "text": "出售中|飞机杯全自动电动男士自慰器隐秘型手动玩具成人性用品斐济杯新款|ID|1033781058830|¥168 - 218|大促活动商品",
+      "cls": "next-table-cell first next-table-fix-left next-table-fix-left-last"
+    },
+    {
+      "i": 41,
+      "tag": "TD",
+      "text": "10",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 42,
+      "tag": "TD",
+      "text": "潜力品",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 43,
+      "tag": "TD",
+      "text": "审核不通过",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 44,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 45,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 46,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 47,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell last"
+    },
+    {
+      "i": 48,
+      "tag": "TD",
+      "text": "出售中|成人用品飞机杯仿真1比1肉臀倒模男性自慰器情趣玩具实体娃娃|ID|1047107786317|¥898 - 1208|大促活动商品",
+      "cls": "next-table-cell first next-table-fix-left next-table-fix-left-last"
+    },
+    {
+      "i": 49,
+      "tag": "TD",
+      "text": "10",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 50,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 51,
+      "tag": "TD",
+      "text": "审核不通过",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 52,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 53,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 54,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 55,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell last"
+    },
+    {
+      "i": 56,
+      "tag": "TD",
+      "text": "出售中|蜜女郎真人熟女屁股倒膜模臀部加热飞机杯男用品自慰器成人性玩具|ID|1048440561782|¥578 - 738|大促活动商品",
+      "cls": "next-table-cell first next-table-fix-left next-table-fix-left-last"
+    },
+    {
+      "i": 57,
+      "tag": "TD",
+      "text": "10",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 58,
+      "tag": "TD",
+      "text": "",
+      "cls": "next-table-cell"
+    },
+    {
+      "i": 59,
+      "tag": "TD",
+      "text": "审核不通过",
+      "cls": "next-table-cell"
+    }
+  ],
+  "tableText": "商品\n卖点介绍\n\t\n主图\n\t\n视频\n\t\n白底图\n\t\n透明图\n\t\n场景图\n\t\n品牌logo\n\t\n活动素材\n出售中\n倒模名器干燥棒一根\nID\n872961316553\n¥39.9\n\t\n\t\n\t\n\t\n\t\n\t\n\t\n\n\n出售中\n蜜女郎 补运费差价专用链接，差多少拍多少\nID\n825951756008\n¥1\n\t\n\t\n优质品\n\t\n审核不通过\n\t\n审核不通过\n\t\n\t\n\t\n\n\n出售中\n半身倒模收纳带【可装密码锁】隐私方便收藏\nID\n851429867792\n¥18 - 119\n大促活动商品\n\t\n2\n\t\n潜力品\n\t\n审核不通过\n\t\n\t\n\t\n\t\n\n\n出售中\n全自动夹吸飞机杯男用真人比例倒臀模成人情趣玩具可插入充气娃娃\nID\n1046620353522\n¥968 - 1458\n大促活动商品\n\t\n10\n\t\n\t\n审核不通过\n\t\n\t\n\t\n\t\n\n\n出售中\n飞机杯全自动电动男士自慰器隐秘型手动玩具成人性用品斐济杯新款\nID\n1033781058830\n¥168 - 218\n大促活动商品\n\t\n10\n\t\n潜力品\n\t\n审核不通过\n\t\n\t\n\t\n\t\n\n\n出售中\n成人用品飞机杯仿真1比1肉臀倒模男性自慰器情趣玩具实体娃娃\nID\n1047107786317\n¥898 - 1208\n大促活动商品\n\t\n10\n\t\n\t\n审核不通过\n\t\n\t\n\t\n\t\n\n\n出售中\n蜜女郎真人熟女屁股倒膜模臀部加热飞机杯男用品自慰器成人性玩具\nID\n1048440561782\n¥578 - 738\n大促活动商品\n\t\n10\n\t\n\t\n审核不通过\n\t\n\t\n\t\n\t\n\n\n出售中\n电动飞机杯可加热男用自慰器熟女真实1比1可插入手动无声成人玩具\nID\n974064324737\n¥268 - 418\n\t\n10\n\t\n优质品\n\t\n审核不通过\n\t\n\t\n\t\n\t\n\n\n出售中\n高端硅胶娃娃重口味可插入1比1真人倒模实体半身男性用成人飞机杯\nID\n1026704244735\n¥4099 - 5399\n大促活动商品\n\t\n10\n\t\n\t\n审核中\n\t\n\t\n\t\n\t\n\n\n出售中\n全自动加热超大屁股倒模男用真人熟女欧美款可插入成人男性飞机杯\nID\n997868122989\n¥898 - 1458\n大促活动商品\n\t\n10\n\t\n潜力品\n\t\n审核不通过\n\t\n\t\n\t\n\t"
+}

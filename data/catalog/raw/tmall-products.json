@@ -1,0 +1,10 @@
+{
+  "channel": "tmall",
+  "storeUrl": "https://minvlang.tmall.com/",
+  "storeName": "蜜女郎旗舰店",
+  "collectedAt": "2026-06-13T11:23:01+08:00",
+  "collectionMethod": "public_page",
+  "accessStatus": "limited",
+  "note": "公开访问进入登录/跳转链，最终未返回稳定商品列表。本轮不绕过平台限制。",
+  "products": []
+}

@@ -1,0 +1,14 @@
+{
+  "updatedAt": "2026-06-13T11:23:01+08:00",
+  "matches": [],
+  "manualReview": [
+    {
+      "reviewId": "half-body-public-review",
+      "productName": "半身款",
+      "tmallProductUrl": null,
+      "jdProductUrl": null,
+      "matchStatus": "needs_review",
+      "reason": "用户说明该半身款已上架且两平台均有链接，但公开页面未能确认具体商品详情页和同款关系。"
+    }
+  ]
+}
