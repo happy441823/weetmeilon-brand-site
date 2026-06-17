@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { adminNavigation, getResourceConfig } from "../../src/lib/cms/schema.ts";
+import { adminNavigation, deleteRolesForResource, getResourceConfig, readRolesForResource, writeRolesForResource } from "../../src/lib/cms/schema.ts";
 
 test("admin users and roles are super admin managed resources", () => {
   const users = getResourceConfig("admin_users");
@@ -26,5 +26,16 @@ test("publish jobs are not exposed as a writable navigation resource", () => {
   const jobs = getResourceConfig("publish_jobs");
   assert.deepEqual(jobs.fields, []);
   assert.deepEqual(jobs.mutableRoles, ["super_admin"]);
+  assert.deepEqual(readRolesForResource(jobs), ["super_admin", "reviewer"]);
+  assert.deepEqual(writeRolesForResource(jobs), []);
+  assert.deepEqual(deleteRolesForResource(jobs), []);
   assert.deepEqual(jobs.listColumns, ["entity_type", "entity_id", "status", "run_at"]);
+});
+
+test("sensitive admin resources require super admin read access", () => {
+  assert.deepEqual(readRolesForResource(getResourceConfig("admin_users")), ["super_admin"]);
+  assert.deepEqual(readRolesForResource(getResourceConfig("admin_roles")), ["super_admin"]);
+  assert.deepEqual(readRolesForResource(getResourceConfig("audit_logs")), ["super_admin"]);
+  assert.deepEqual(writeRolesForResource(getResourceConfig("site_settings")), ["super_admin"]);
+  assert.deepEqual(deleteRolesForResource(getResourceConfig("site_settings")), ["super_admin"]);
 });

@@ -4,6 +4,7 @@ import {
   createResourceItem,
   deleteResourceItem,
   getResourceItem,
+  listResource,
   updateResourceItem
 } from "../../src/lib/cms/db.ts";
 import { setCmsBindingsForTest } from "../../src/lib/cms/env.ts";
@@ -46,12 +47,18 @@ class SiteSettingsD1 {
         return { success: true, meta: {} };
       },
       async first() {
+        if (/SELECT COUNT\(\*\) AS total FROM "site_settings"/.test(sql)) {
+          return { total: db.rows.size };
+        }
         if (/SELECT \* FROM "site_settings" WHERE "key" = \?/.test(sql)) {
           return db.rows.get(this.values[0]) || null;
         }
         return null;
       },
       async all() {
+        if (/SELECT \* FROM "site_settings"/.test(sql)) {
+          return { results: [...db.rows.values()], success: true, meta: {} };
+        }
         return { results: [], success: true, meta: {} };
       }
     };
@@ -81,6 +88,30 @@ test("site_settings CRUD uses key as primary key", async () => {
 
     await deleteResourceItem("site_settings", "seo.defaults");
     assert.equal(await getResourceItem("site_settings", "seo.defaults"), null);
+  } finally {
+    setCmsBindingsForTest(null);
+  }
+});
+
+test("site_settings hides sensitive values from non super admin reads", async () => {
+  const db = new SiteSettingsD1();
+  db.rows.set("cms.secret", {
+    key: "cms.secret",
+    value_json: "\"hidden\"",
+    setting_group: "cms",
+    is_sensitive: 1,
+    created_at: "2026-06-17T00:00:00.000Z",
+    updated_at: "2026-06-17T00:00:00.000Z"
+  });
+  setCmsBindingsForTest({ CMS_DB: db });
+  try {
+    const item = await getResourceItem("site_settings", "cms.secret", { hideSensitiveSettings: true });
+    assert.equal(item.value_json, null);
+    assert.equal(item.redacted, true);
+
+    const list = await listResource("site_settings", { hideSensitiveSettings: true });
+    assert.equal(list.rows[0].value_json, null);
+    assert.equal(list.rows[0].redacted, true);
   } finally {
     setCmsBindingsForTest(null);
   }

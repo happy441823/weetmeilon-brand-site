@@ -9,6 +9,7 @@ type QueryOptions = {
   status?: string;
   page?: number;
   pageSize?: number;
+  hideSensitiveSettings?: boolean;
 };
 
 const baseFields = ["id", "created_at", "updated_at"];
@@ -24,6 +25,26 @@ function fieldNames(fields: CmsField[]) {
 function primaryKeyFor(resource: string) {
   const config = getResourceConfig(resource);
   return config?.primaryKey || "id";
+}
+
+const systemRoleNames = new Set(["super_admin", "editor", "reviewer", "viewer"]);
+const systemRoleIds = new Set(["role_super_admin", "role_editor", "role_reviewer", "role_viewer"]);
+
+function redactSensitiveSettings(resource: string, row: Record<string, unknown>, hideSensitiveSettings?: boolean) {
+  if (resource !== "site_settings" || !hideSensitiveSettings || !(row.is_sensitive === 1 || row.is_sensitive === true)) {
+    return row;
+  }
+  return { ...row, value_json: null, redacted: true };
+}
+
+async function assertMutableSystemRole(db: { prepare(sql: string): { bind(...values: unknown[]): { first<T = Record<string, unknown>>(): Promise<T | null> } } }, id: string) {
+  if (systemRoleIds.has(id)) {
+    throw new Error("系统内置角色不允许通过通用 CRUD 编辑或删除。");
+  }
+  const role = await db.prepare("SELECT id, name FROM admin_roles WHERE id = ?").bind(id).first<{ id: string; name: string }>();
+  if (role && systemRoleNames.has(role.name)) {
+    throw new Error("系统内置角色不允许通过通用 CRUD 编辑或删除。");
+  }
 }
 
 function normalizeFieldValue(field: CmsField, value: unknown) {
@@ -115,21 +136,22 @@ export async function listResource(resource: string, options: QueryOptions = {})
     .all<Record<string, unknown>>();
 
   return {
-    rows: rows.results,
+    rows: rows.results.map((row) => redactSensitiveSettings(resource, row, options.hideSensitiveSettings)),
     total: count?.total || 0,
     dbReady: true
   };
 }
 
-export async function getResourceItem(resource: string, id: string) {
+export async function getResourceItem(resource: string, id: string, options: { hideSensitiveSettings?: boolean } = {}) {
   const config = getResourceConfig(resource);
   const db = getCmsDb();
   if (!config) throw new Error("未知资源。");
   if (!db) return null;
-  return db.prepare(`SELECT * FROM ${quote(config.table)} WHERE ${quote(primaryKeyFor(resource))} = ?`).bind(id).first<Record<string, unknown>>();
+  const row = await db.prepare(`SELECT * FROM ${quote(config.table)} WHERE ${quote(primaryKeyFor(resource))} = ?`).bind(id).first<Record<string, unknown>>();
+  return row ? redactSensitiveSettings(resource, row, options.hideSensitiveSettings) : null;
 }
 
-export async function createResourceItem(resource: string, input: Record<string, unknown>) {
+export async function createResourceItem(resource: string, input: Record<string, unknown>, actorId?: string) {
   const config = getResourceConfig(resource);
   const db = getCmsDb();
   if (!config) throw new Error("未知资源。");
@@ -151,17 +173,20 @@ export async function createResourceItem(resource: string, input: Record<string,
     .bind(...values)
     .run();
 
-  await createRevisionIfNeeded(resource, id, "创建内容");
+  await createRevisionIfNeeded(resource, id, "创建内容", actorId);
   const item = await getResourceItem(resource, id);
   await syncMediaUsages(resource, id, item || {});
   return item;
 }
 
-export async function updateResourceItem(resource: string, id: string, input: Record<string, unknown>, summary = "更新内容") {
+export async function updateResourceItem(resource: string, id: string, input: Record<string, unknown>, summary = "更新内容", actorId?: string) {
   const config = getResourceConfig(resource);
   const db = getCmsDb();
   if (!config) throw new Error("未知资源。");
   if (!db) throw new Error("CMS_DB 未绑定。");
+  if (resource === "admin_roles") {
+    await assertMutableSystemRole(db, id);
+  }
 
   const payload = preparePayload(resource, input);
   const names = Object.keys(payload);
@@ -174,7 +199,7 @@ export async function updateResourceItem(resource: string, id: string, input: Re
     .bind(...Object.values(payload), new Date().toISOString(), id)
     .run();
 
-  await createRevisionIfNeeded(resource, id, summary);
+  await createRevisionIfNeeded(resource, id, summary, actorId);
   const item = await getResourceItem(resource, id);
   await syncMediaUsages(resource, id, item || {});
   return item;
@@ -191,6 +216,9 @@ export async function deleteResourceItem(resource: string, id: string) {
   }
   if (resource === "publish_jobs") {
     throw new Error("发布任务只能由工作流服务维护，不能通过通用 CRUD 删除。");
+  }
+  if (resource === "admin_roles") {
+    await assertMutableSystemRole(db, id);
   }
   if (resource === "media_assets") {
     const usage = await db.prepare("SELECT COUNT(*) AS total FROM media_usages WHERE media_id = ?").bind(id).first<{ total: number }>();
@@ -280,11 +308,11 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
       .run();
   }
 
-  await createRevisionIfNeeded(resource, id, `状态改为 ${status}`);
+  await createRevisionIfNeeded(resource, id, `状态改为 ${status}`, actorId);
   return getResourceItem(resource, id);
 }
 
-export async function createRevisionIfNeeded(resource: string, id: string, summary: string) {
+export async function createRevisionIfNeeded(resource: string, id: string, summary: string, actorId?: string) {
   const map: Record<string, { table: string; field: string; source: string }> = {
     products: { table: "product_revisions", field: "product_id", source: "products" },
     articles: { table: "article_revisions", field: "article_id", source: "articles" },
@@ -306,8 +334,8 @@ export async function createRevisionIfNeeded(resource: string, id: string, summa
     .first<{ next_version: number }>();
 
   await db
-    .prepare(`INSERT INTO ${quote(target.table)} (id, ${quote(target.field)}, version, summary, snapshot_json) VALUES (?, ?, ?, ?, ?)`)
-    .bind(crypto.randomUUID(), id, version?.next_version || 1, summary, JSON.stringify(current))
+    .prepare(`INSERT INTO ${quote(target.table)} (id, ${quote(target.field)}, version, actor_id, summary, snapshot_json) VALUES (?, ?, ?, ?, ?, ?)`)
+    .bind(crypto.randomUUID(), id, version?.next_version || 1, actorId || null, summary, JSON.stringify(current))
     .run();
 }
 

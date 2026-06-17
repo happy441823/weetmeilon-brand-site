@@ -41,6 +41,9 @@ export type CmsResourceConfig = {
   labelPlural: string;
   searchable: string[];
   mutableRoles: CmsRole[];
+  readRoles?: CmsRole[];
+  writeRoles?: CmsRole[];
+  deleteRoles?: CmsRole[];
   fields: CmsField[];
   listColumns: string[];
 };
@@ -70,6 +73,9 @@ export const cmsResources = {
     labelPlural: "管理员管理",
     searchable: ["email", "name"],
     mutableRoles: ["super_admin"],
+    readRoles: ["super_admin"],
+    writeRoles: ["super_admin"],
+    deleteRoles: ["super_admin"],
     listColumns: ["email", "name", "is_active", "last_login_at"],
     fields: [
       { name: "email", label: "邮箱", type: "text", required: true },
@@ -84,6 +90,9 @@ export const cmsResources = {
     labelPlural: "角色管理",
     searchable: ["name", "description"],
     mutableRoles: ["super_admin"],
+    readRoles: ["super_admin"],
+    writeRoles: ["super_admin"],
+    deleteRoles: ["super_admin"],
     listColumns: ["name", "description", "updated_at"],
     fields: [
       { name: "name", label: "角色名", type: "text", required: true },
@@ -379,6 +388,9 @@ export const cmsResources = {
     labelPlural: "站点设置",
     searchable: ["key", "setting_group"],
     mutableRoles: ["super_admin"],
+    readRoles: ["super_admin", "editor", "reviewer", "viewer"],
+    writeRoles: ["super_admin"],
+    deleteRoles: ["super_admin"],
     listColumns: ["key", "setting_group", "updated_at"],
     fields: [
       { name: "key", label: "Key", type: "text", required: true },
@@ -393,6 +405,9 @@ export const cmsResources = {
     labelPlural: "操作日志",
     searchable: ["actor_email", "action", "entity_type", "summary"],
     mutableRoles: ["super_admin"],
+    readRoles: ["super_admin"],
+    writeRoles: ["super_admin"],
+    deleteRoles: [],
     listColumns: ["actor_email", "action", "entity_type", "created_at"],
     fields: []
   },
@@ -402,6 +417,9 @@ export const cmsResources = {
     labelPlural: "定时发布",
     searchable: ["entity_type", "entity_id", "status"],
     mutableRoles: ["super_admin"],
+    readRoles: ["super_admin", "reviewer"],
+    writeRoles: [],
+    deleteRoles: [],
     listColumns: ["entity_type", "entity_id", "status", "run_at"],
     fields: []
   }
@@ -409,6 +427,18 @@ export const cmsResources = {
 
 export function getResourceConfig(resource: string): CmsResourceConfig | undefined {
   return cmsResources[resource as keyof typeof cmsResources] as CmsResourceConfig | undefined;
+}
+
+export function readRolesForResource(config: CmsResourceConfig): CmsRole[] {
+  return config.readRoles || ["super_admin", "editor", "reviewer", "viewer"];
+}
+
+export function writeRolesForResource(config: CmsResourceConfig): CmsRole[] {
+  return config.writeRoles || config.mutableRoles;
+}
+
+export function deleteRolesForResource(config: CmsResourceConfig): CmsRole[] {
+  return config.deleteRoles || ["super_admin"];
 }
 
 export const adminNavigation = [
