@@ -11,6 +11,7 @@ type Field = {
 };
 
 type ResourceConfig = {
+  primaryKey?: string;
   label: string;
   labelPlural: string;
   fields: Field[];
@@ -42,6 +43,33 @@ const preferredResources = [
   "publish_jobs",
   "audit_logs"
 ];
+
+export const workflowManagedClientFields = new Set([
+  "status",
+  "published_at",
+  "published_by",
+  "reviewed_by",
+  "first_published_at",
+  "last_published_by"
+]);
+
+export const workflowClientResources = new Set(["products", "articles", "pages"]);
+
+export function resourcePrimaryKey(config?: Pick<ResourceConfig, "primaryKey"> | null) {
+  return config?.primaryKey || "id";
+}
+
+export function resourceItemKey(row: Record<string, unknown>, config?: Pick<ResourceConfig, "primaryKey"> | null) {
+  const key = resourcePrimaryKey(config);
+  return String(row[key] ?? row.id ?? "");
+}
+
+export function buildAdminSavePayload(resource: string, form: Record<string, unknown>) {
+  if (!workflowClientResources.has(resource)) {
+    return { ...form };
+  }
+  return Object.fromEntries(Object.entries(form).filter(([key]) => !workflowManagedClientFields.has(key)));
+}
 
 function emptyValue(field: Field) {
   if (field.type === "boolean") return false;
@@ -137,11 +165,12 @@ export function AdminCmsClient() {
     setMessage("");
     startTransition(async () => {
       try {
-        const url = selected ? `/api/admin/resource/${resource}/${selected.id}` : `/api/admin/resource/${resource}`;
+        const id = selected ? resourceItemKey(selected, config) : "";
+        const url = selected ? `/api/admin/resource/${resource}/${encodeURIComponent(id)}` : `/api/admin/resource/${resource}`;
         const response = await fetch(url, {
           method: selected ? "PATCH" : "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(form)
+          body: JSON.stringify(buildAdminSavePayload(resource, form))
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "保存失败。");
@@ -155,11 +184,12 @@ export function AdminCmsClient() {
   }
 
   async function workflow(action: "submit_review" | "publish" | "offline") {
-    if (!selected) return;
+    if (!selected || !config) return;
     setMessage("");
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/admin/resource/${resource}/${selected.id}`, {
+        const id = resourceItemKey(selected, config);
+        const response = await fetch(`/api/admin/resource/${resource}/${encodeURIComponent(id)}`, {
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ _action: action })
@@ -176,13 +206,14 @@ export function AdminCmsClient() {
   }
 
   async function remove() {
-    if (!selected) return;
+    if (!selected || !config) return;
     const name = String(selected.name || selected.title || selected.question || selected.id);
     const confirmed = window.prompt(`删除不可撤销。请输入内容名称确认：${name}`) === name;
     if (!confirmed) return;
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/admin/resource/${resource}/${selected.id}`, { method: "DELETE" });
+        const id = resourceItemKey(selected, config);
+        const response = await fetch(`/api/admin/resource/${resource}/${encodeURIComponent(id)}`, { method: "DELETE" });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "删除失败。");
         setMessage("已删除。");
@@ -277,7 +308,7 @@ export function AdminCmsClient() {
                     </thead>
                     <tbody>
                       {rows.map((row) => (
-                        <tr key={String(row.id)} className="text-white/78">
+                        <tr key={resourceItemKey(row, config)} className="text-white/78">
                           {config.listColumns.map((column) => <td key={column} className="border-b border-white/8 px-3 py-3">{displayValue(row[column])}</td>)}
                           <td className="border-b border-white/8 px-3 py-3">
                             <button type="button" onClick={() => editRow(row)} className="rounded-full border border-mint-300/35 px-3 py-1 text-xs font-black text-mint-300 hover:bg-mint-300/10">编辑</button>
@@ -402,4 +433,3 @@ function BackupView() {
     </section>
   );
 }
-

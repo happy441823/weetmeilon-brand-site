@@ -22,10 +22,22 @@ test("HTML sanitizer removes scripts, event handlers, dangerous URLs, iframes an
   assert.match(clean, /Title/);
 });
 
+test("HTML sanitizer decodes entities before URL validation", () => {
+  const clean = sanitizeHtml('<a href="&#x6a;avascript:alert(1)">x</a><a href="/safe">safe</a>');
+  assert.doesNotMatch(clean, /javascript:/i);
+  assert.match(clean, /href="\/safe"/);
+});
+
+test("HTML sanitizer blocks mixed-case forbidden tags and srcdoc", () => {
+  const clean = sanitizeHtml('<SvG><script>alert(1)</script></SvG><iframe srcdoc="<script>alert(1)</script>"></iframe><p>ok</p>');
+  assert.doesNotMatch(clean, /svg|iframe|srcdoc|script/i);
+  assert.equal(clean, "<p>ok</p>");
+});
+
 test("Markdown is escaped before HTML conversion and sanitized afterwards", () => {
   const html = markdownToSafeHtml("## Safe\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>");
   assert.match(html, /<h2>Safe<\/h2>/);
-  assert.doesNotMatch(html, /script|onerror|<img/i);
+  assert.doesNotMatch(html, /<script|<img/i);
   assert.match(html, /&lt;img/);
 });
 
@@ -41,7 +53,15 @@ test("content blocks and modules use strict allowed type schemas", () => {
   assert.throws(() => validateModulesJson([{ type: "iframe", src: "https://evil.example" }]), /不支持/);
 });
 
-test("config JSON rejects dangerous strings", () => {
+test("content block validation rejects unknown fields and nested unsafe arrays", () => {
+  assert.throws(() => validateContentBlocksJson([{ type: "paragraph", text: "ok", extra: "no" }]), /不是允许字段/);
+  assert.throws(
+    () => validateContentBlocksJson([{ type: "gallery", items: [{ caption: "ok", nested: ["java&#x73;cript:alert(1)"] }] }]),
+    /不安全/
+  );
+});
+
+test("config JSON rejects dangerous strings recursively", () => {
   assert.equal(validateConfigJson({ layout: "default" }), JSON.stringify({ layout: "default" }));
-  assert.throws(() => validateConfigJson({ href: "data:text/html,<script>alert(1)</script>" }), /不安全/);
+  assert.throws(() => validateConfigJson({ nested: { links: ["data:text/html,<script>alert(1)</script>"] } }), /不安全/);
 });

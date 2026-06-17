@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { buildRestorePreview, cmsBackupTables, validateBackupPackage } from "../../src/lib/cms/backup.ts";
+
+const repoRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 function fullBackup() {
   return {
@@ -30,4 +35,13 @@ test("restore preview returns table counts and requires manual confirmation", ()
   assert.equal(preview.tableCounts.audit_logs, 1);
   assert.equal(preview.requiresManualConfirmation, true);
   assert.equal(preview.r2BackupRequired, true);
+});
+
+test("backup table names match migration tables", () => {
+  const sql = readFileSync(join(repoRoot, "migrations", "0001_admin_cms.sql"), "utf8");
+  const migrationTables = [...sql.matchAll(/CREATE TABLE IF NOT EXISTS\s+([a-z_]+)/g)].map((match) => match[1]);
+  assert.equal(cmsBackupTables.length, 31);
+  assert.equal(cmsBackupTables.includes("product_images"), true);
+  assert.equal(cmsBackupTables.includes("product_media"), false);
+  assert.deepEqual([...cmsBackupTables].sort(), migrationTables.sort());
 });

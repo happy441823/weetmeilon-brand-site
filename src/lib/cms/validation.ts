@@ -3,6 +3,24 @@ import { markdownToSafeHtml, normalizeCmsJsonField, sanitizeHtml } from "./conte
 
 const blockedProtocols = /^(javascript|data):/i;
 
+function decodeHtmlEntities(input: string) {
+  return input
+    .replace(/&#x([0-9a-f]+);?/gi, (_match, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#([0-9]+);?/g, (_match, decimal: string) => String.fromCodePoint(Number.parseInt(decimal, 10)))
+    .replace(/&colon;/gi, ":")
+    .replace(/&sol;/gi, "/")
+    .replace(/&Tab;/gi, "\t")
+    .replace(/&NewLine;/gi, "\n")
+    .replace(/&amp;/gi, "&");
+}
+
+function normalizeUrlForValidation(value: string) {
+  return decodeHtmlEntities(value)
+    .trim()
+    .normalize("NFKC")
+    .replace(/[\u0000-\u001f\u007f\s]+/g, "");
+}
+
 export function slugify(input: string) {
   return input
     .trim()
@@ -19,12 +37,15 @@ export function sanitizeText(input: unknown) {
 }
 
 export function assertSafeUrl(value: string, label = "链接") {
-  const url = value.trim();
+  const url = normalizeUrlForValidation(value);
   if (!url) {
     return "";
   }
   if (blockedProtocols.test(url)) {
     throw new Error(`${label} 不允许使用 javascript: 或 data: 协议。`);
+  }
+  if (url.startsWith("//")) {
+    throw new Error(`${label} 不允许使用协议相对 URL。`);
   }
   if (url.startsWith("/") || /^https?:\/\//i.test(url)) {
     return url;
@@ -64,7 +85,13 @@ export function validateSeo(input: { seo_title?: string | null; seo_description?
   return issues;
 }
 
-export function validateArticlePublish(input: { title?: string | null; excerpt?: string | null; body_html?: string | null; seo_title?: string | null; seo_description?: string | null }) {
+export function validateArticlePublish(input: {
+  title?: string | null;
+  excerpt?: string | null;
+  body_html?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+}) {
   const blocking: string[] = [];
   const warnings = validateSeo(input);
   if (!input.title) blocking.push("文章标题不能为空。");
@@ -78,7 +105,15 @@ export function validateArticlePublish(input: { title?: string | null; excerpt?:
   return { blocking, warnings };
 }
 
-export function validateProductPublish(input: { name?: string | null; slug?: string | null; status?: string | null; seo_title?: string | null; seo_description?: string | null; tmall_url?: string | null; jd_url?: string | null }) {
+export function validateProductPublish(input: {
+  name?: string | null;
+  slug?: string | null;
+  status?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  tmall_url?: string | null;
+  jd_url?: string | null;
+}) {
   const blocking: string[] = [];
   const warnings = validateSeo(input);
   if (!input.name) blocking.push("商品名称不能为空。");

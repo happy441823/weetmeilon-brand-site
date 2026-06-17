@@ -7,7 +7,7 @@ export const cmsBackupTables = [
   "product_tags",
   "products",
   "product_tag_relations",
-  "product_media",
+  "product_images",
   "product_revisions",
   "article_categories",
   "article_tags",
