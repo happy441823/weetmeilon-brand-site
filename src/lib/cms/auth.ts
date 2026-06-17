@@ -23,6 +23,9 @@ export function adminErrorResponse(error: unknown) {
   if (error instanceof AdminAuthError) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }
+  if (error instanceof Error && "status" in error && typeof error.status === "number") {
+    return NextResponse.json({ error: error.message }, { status: error.status });
+  }
 
   return NextResponse.json({ error: "后台服务暂时不可用，请稍后重试。" }, { status: 500 });
 }

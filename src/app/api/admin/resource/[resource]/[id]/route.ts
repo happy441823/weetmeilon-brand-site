@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminErrorResponse, requireAdmin, requireRole, writeAuditLog } from "@/lib/cms/auth";
 import { deleteResourceItem, getResourceItem, setWorkflowStatus, updateResourceItem } from "@/lib/cms/db";
 import { getResourceConfig } from "@/lib/cms/schema";
+import { assertWorkflowAction, sanitizeUpdatePayload } from "@/lib/cms/workflow";
 
 type Params = { params: Promise<{ resource: string; id: string }> };
 
@@ -31,16 +32,11 @@ export async function PATCH(request: Request, { params }: Params) {
     const action = typeof body._action === "string" ? body._action : "";
     let item;
 
-    if (action === "submit_review") {
-      item = await setWorkflowStatus(resource, id, "pending_review", admin.id);
-    } else if (action === "publish") {
-      await requireRole(request, ["super_admin", "reviewer"]);
-      item = await setWorkflowStatus(resource, id, "published", admin.id);
-    } else if (action === "offline") {
-      await requireRole(request, ["super_admin", "reviewer"]);
-      item = await setWorkflowStatus(resource, id, "offline", admin.id);
+    if (action) {
+      const nextStatus = assertWorkflowAction(resource, action, admin.roles);
+      item = await setWorkflowStatus(resource, id, nextStatus, admin.id);
     } else {
-      item = await updateResourceItem(resource, id, body);
+      item = await updateResourceItem(resource, id, sanitizeUpdatePayload(body));
     }
 
     await writeAuditLog({ request, actor: admin, action: action || "update", entityType: resource, entityId: id, summary: `更新${config.label}` });

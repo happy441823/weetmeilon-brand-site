@@ -184,6 +184,10 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
   if (!allowed.has(resource)) {
     throw new Error("该资源不支持发布工作流。");
   }
+  const config = getResourceConfig(resource);
+  const db = getCmsDb();
+  if (!config) throw new Error("未知资源。");
+  if (!db) throw new Error("CMS_DB 未绑定。");
 
   const now = new Date().toISOString();
   const patch: Record<string, unknown> = { status };
@@ -203,7 +207,14 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
     patch.reviewed_by = actorId;
   }
 
-  return updateResourceItem(resource, id, patch, `状态改为 ${status}`);
+  const names = Object.keys(patch);
+  await db
+    .prepare(`UPDATE ${quote(config.table)} SET ${names.map((name) => `${quote(name)} = ?`).join(", ")}, updated_at = ? WHERE id = ?`)
+    .bind(...Object.values(patch), now, id)
+    .run();
+
+  await createRevisionIfNeeded(resource, id, `状态改为 ${status}`);
+  return getResourceItem(resource, id);
 }
 
 export async function createRevisionIfNeeded(resource: string, id: string, summary: string) {
