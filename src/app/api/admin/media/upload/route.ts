@@ -5,6 +5,7 @@ import { assertAllowedMediaGroup, assertUploadBatch, safeMediaName, validateMedi
 
 export async function POST(request: Request) {
   const uploadedKeys: string[] = [];
+  const createdIds: string[] = [];
 
   try {
     const admin = await requireRole(request, ["super_admin", "editor"]);
@@ -25,7 +26,9 @@ export async function POST(request: Request) {
       const key = `${group}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${safeMediaName(file.name || `upload${detected.extension}`)}`;
       await bucket.put(key, buffer, { httpMetadata: { contentType: detected.mimeType } });
       uploadedKeys.push(key);
-      created.push(await insertMedia(db, file, key, group, admin.id, detected.mimeType, detected.fileType));
+      const asset = await insertMedia(db, file, key, group, admin.id, detected.mimeType, detected.fileType);
+      if (asset?.id) createdIds.push(String(asset.id));
+      created.push(asset);
     }
 
     await writeAuditLog({ request, actor: admin, action: "upload", entityType: "media_assets", summary: `上传 ${created.length} 个素材` });
@@ -35,6 +38,10 @@ export async function POST(request: Request) {
     if (bucket && uploadedKeys.length > 0) {
       await Promise.allSettled(uploadedKeys.map((key) => bucket.delete(key)));
     }
+    const db = getCmsDb();
+    if (db && createdIds.length > 0) {
+      await Promise.allSettled(createdIds.map((id) => db.prepare("DELETE FROM media_assets WHERE id = ?").bind(id).run()));
+    }
     return adminErrorResponse(error);
   }
 }
@@ -42,8 +49,12 @@ export async function POST(request: Request) {
 async function insertMedia(db: D1Database, file: File, key: string, group: string, adminId: string, mimeType: string, fileType: string) {
   const id = crypto.randomUUID();
   const publicBase = await db.prepare("SELECT value_json FROM site_settings WHERE key = 'cms.media_public_base_url'").first<{ value_json: string }>();
-  const base = publicBase?.value_json ? String(JSON.parse(publicBase.value_json)) : "";
-  const publicUrl = base ? `${base.replace(/\/$/, "")}/${key}` : null;
+  const settingBase = publicBase?.value_json ? String(JSON.parse(publicBase.value_json)) : "";
+  const base = settingBase || process.env.CMS_MEDIA_PUBLIC_BASE_URL || "";
+  if (!base) {
+    throw new Error("CMS 媒体 public_url 未配置：请设置 cms.media_public_base_url 或 CMS_MEDIA_PUBLIC_BASE_URL。");
+  }
+  const publicUrl = `${base.replace(/\/$/, "")}/${key}`;
   await db
     .prepare(
       `INSERT INTO media_assets (id, file_name, r2_key, public_url, file_type, mime_type, file_size, asset_group, uploaded_by)
@@ -51,5 +62,5 @@ async function insertMedia(db: D1Database, file: File, key: string, group: strin
     )
     .bind(id, file.name, key, publicUrl, fileType, mimeType, file.size, group, adminId)
     .run();
-  return db.prepare("SELECT * FROM media_assets WHERE id = ?").bind(id).first();
+  return db.prepare("SELECT * FROM media_assets WHERE id = ?").bind(id).first<{ id: string } & Record<string, unknown>>();
 }

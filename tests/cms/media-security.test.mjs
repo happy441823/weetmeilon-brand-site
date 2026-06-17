@@ -28,6 +28,13 @@ test("media magic detection rejects svg and MIME spoofing", async () => {
 test("media upload batch limits count, total size and group", () => {
   const tinyPng = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], "x.png", { type: "image/png" });
   assert.equal(assertAllowedMediaGroup("products"), "products");
+  assert.equal(assertAllowedMediaGroup("articles"), "articles");
+  assert.equal(assertAllowedMediaGroup("pages"), "pages");
+  assert.equal(assertAllowedMediaGroup("homepage"), "homepage");
+  assert.equal(assertAllowedMediaGroup("faq"), "faq");
+  assert.throws(() => assertAllowedMediaGroup("product"), /分组/);
+  assert.throws(() => assertAllowedMediaGroup("article"), /分组/);
+  assert.throws(() => assertAllowedMediaGroup("page"), /分组/);
   assert.throws(() => assertAllowedMediaGroup("../private"), /分组/);
   assert.doesNotThrow(() => assertUploadBatch([tinyPng]));
   assert.throws(() => assertUploadBatch([]), /请选择/);

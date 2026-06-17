@@ -1,5 +1,6 @@
 import { catalogCategories, catalogSeries, getPublicCatalogProductBySlug, getPublicCatalogProducts } from "@/lib/catalog";
 import type { CatalogCategory, CatalogSeries, PublicCatalogProduct } from "@/types/catalog";
+import { getCmsDb } from "./env";
 import { readPublicCmsRows } from "./public-content";
 
 type ProductRow = Record<string, unknown> & {
@@ -31,6 +32,14 @@ type ProductRow = Record<string, unknown> & {
   seo_title?: string | null;
   seo_description?: string | null;
   updated_at?: string | null;
+};
+
+type ProductMediaRow = {
+  product_id: string;
+  image_type?: string | null;
+  sort_order?: number | null;
+  alt_text?: string | null;
+  public_url?: string | null;
 };
 
 type CategoryRow = {
@@ -65,11 +74,14 @@ function parseJsonArray<T>(value: unknown, fallback: T[] = []) {
   }
 }
 
-function toPublicProduct(row: ProductRow): PublicCatalogProduct {
+function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): PublicCatalogProduct {
   const upcoming = row.status === "coming_soon";
   const displayName = row.name;
   const summary = row.summary || row.subtitle || displayName;
   const channelEnabled = !upcoming && row.buy_button_enabled !== 0;
+  const sortedMedia = [...media].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+  const cover = sortedMedia.find((item) => item.image_type === "cover" && item.public_url) || sortedMedia.find((item) => item.public_url);
+  const gallery = sortedMedia.map((item) => item.public_url).filter((url): url is string => Boolean(url));
   return {
     id: row.id,
     slug: row.slug,
@@ -84,9 +96,9 @@ function toPublicProduct(row: ProductRow): PublicCatalogProduct {
     featured: row.featured === 1,
     sortOrder: Number(row.sort_order || 0),
     launchDate: null,
-    coverImage: "/images/products/product-01.png",
-    gallery: parseJsonArray<string>(row.gallery_json),
-    imageAlt: row.image_alt || displayName,
+    coverImage: cover?.public_url || "/images/products/product-01.png",
+    gallery: gallery.length > 0 ? gallery : parseJsonArray<string>(row.gallery_json),
+    imageAlt: cover?.alt_text || row.image_alt || displayName,
     shortDescription: summary,
     fullDescription: row.body_html || summary,
     heroLine: row.subtitle || summary,
@@ -117,6 +129,30 @@ function toPublicProduct(row: ProductRow): PublicCatalogProduct {
     seoKeywords: [],
     updatedAt: row.updated_at || new Date(0).toISOString()
   };
+}
+
+async function loadProductMedia(rows: ProductRow[]) {
+  const db = getCmsDb();
+  const ids = rows.map((row) => row.id).filter(Boolean);
+  if (!db || ids.length === 0) return new Map<string, ProductMediaRow[]>();
+  const placeholders = ids.map(() => "?").join(", ");
+  const result = await db
+    .prepare(
+      `SELECT pi.product_id, pi.image_type, pi.sort_order, pi.alt_text, ma.public_url
+       FROM product_images pi
+       INNER JOIN media_assets ma ON ma.id = pi.media_id
+       WHERE pi.product_id IN (${placeholders})
+       ORDER BY pi.product_id ASC, pi.sort_order ASC`
+    )
+    .bind(...ids)
+    .all<ProductMediaRow>();
+  const map = new Map<string, ProductMediaRow[]>();
+  for (const row of result.results || []) {
+    const current = map.get(row.product_id) || [];
+    current.push(row);
+    map.set(row.product_id, current);
+  }
+  return map;
 }
 
 function toCategory(row: CategoryRow): CatalogCategory {
@@ -153,7 +189,8 @@ export async function getPublicProductsWithCmsFallback() {
   if (result.source !== "d1") {
     return getPublicCatalogProducts();
   }
-  return result.rows.map(toPublicProduct).sort((a, b) => a.sortOrder - b.sortOrder);
+  const media = await loadProductMedia(result.rows);
+  return result.rows.map((row) => toPublicProduct(row, media.get(row.id))).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export async function getPublicProductBySlugWithCmsFallback(slug: string) {
@@ -161,7 +198,8 @@ export async function getPublicProductBySlugWithCmsFallback(slug: string) {
   if (result.source !== "d1") {
     return getPublicCatalogProductBySlug(slug);
   }
-  return result.rows.map(toPublicProduct).find((product) => product.slug === slug) || null;
+  const media = await loadProductMedia(result.rows);
+  return result.rows.map((row) => toPublicProduct(row, media.get(row.id))).find((product) => product.slug === slug) || null;
 }
 
 export async function getPublicCategoriesWithCmsFallback() {

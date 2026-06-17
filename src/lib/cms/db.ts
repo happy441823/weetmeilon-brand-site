@@ -152,8 +152,9 @@ export async function createResourceItem(resource: string, input: Record<string,
     .run();
 
   await createRevisionIfNeeded(resource, id, "创建内容");
-  await syncMediaUsages(resource, id, payload);
-  return getResourceItem(resource, id);
+  const item = await getResourceItem(resource, id);
+  await syncMediaUsages(resource, id, item || {});
+  return item;
 }
 
 export async function updateResourceItem(resource: string, id: string, input: Record<string, unknown>, summary = "更新内容") {
@@ -174,8 +175,9 @@ export async function updateResourceItem(resource: string, id: string, input: Re
     .run();
 
   await createRevisionIfNeeded(resource, id, summary);
-  await syncMediaUsages(resource, id, payload);
-  return getResourceItem(resource, id);
+  const item = await getResourceItem(resource, id);
+  await syncMediaUsages(resource, id, item || {});
+  return item;
 }
 
 export async function deleteResourceItem(resource: string, id: string) {
@@ -309,46 +311,57 @@ export async function createRevisionIfNeeded(resource: string, id: string, summa
     .run();
 }
 
-function collectMediaIds(value: unknown, ids = new Set<string>()) {
-  if (typeof value === "string") {
-    if (/^[0-9a-f-]{20,}$/i.test(value) || /^media[_-]/i.test(value)) {
-      ids.add(value);
-      return ids;
-    }
-    const trimmed = value.trim();
-    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
-      try {
-        collectMediaIds(JSON.parse(trimmed), ids);
-      } catch {
-        // Ignore non-JSON strings.
-      }
-    }
-    return ids;
+const explicitMediaFields = new Set(["cover_media_id", "hero_media_id", "og_media_id", "media_id", "image_media_id"]);
+const structuredMediaJsonFields = new Set(["gallery_json", "content_blocks_json", "modules_json", "config_json"]);
+
+function parseMaybeJson(value: unknown) {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed || (!trimmed.startsWith("{") && !trimmed.startsWith("["))) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
   }
+}
+
+function collectStructuredMediaIds(value: unknown, fieldName: string, refs: Map<string, string>) {
   if (Array.isArray(value)) {
-    for (const item of value) collectMediaIds(item, ids);
-    return ids;
+    for (const item of value) collectStructuredMediaIds(item, fieldName, refs);
+    return;
   }
-  if (value && typeof value === "object") {
-    for (const [key, entry] of Object.entries(value)) {
-      if (/media_id$|cover_media_id|hero_media_id|og_media_id/i.test(key) && typeof entry === "string") {
-        ids.add(entry);
-      }
-      collectMediaIds(entry, ids);
+  if (!value || typeof value !== "object") return;
+  const entry = value as Record<string, unknown>;
+  if (typeof entry.media_id === "string" && entry.media_id.trim()) {
+    refs.set(entry.media_id.trim(), fieldName);
+  }
+  if (Array.isArray(entry.items)) collectStructuredMediaIds(entry.items, fieldName, refs);
+  if (Array.isArray(entry.images)) collectStructuredMediaIds(entry.images, fieldName, refs);
+  if (Array.isArray(entry.blocks)) collectStructuredMediaIds(entry.blocks, fieldName, refs);
+}
+
+function collectExplicitMediaRefs(record: Record<string, unknown>) {
+  const refs = new Map<string, string>();
+  for (const [field, value] of Object.entries(record)) {
+    if (explicitMediaFields.has(field) && typeof value === "string" && value.trim()) {
+      refs.set(value.trim(), field);
+    }
+    if (structuredMediaJsonFields.has(field)) {
+      collectStructuredMediaIds(parseMaybeJson(value), field, refs);
     }
   }
-  return ids;
+  return refs;
 }
 
 export async function syncMediaUsages(resource: string, id: string, payload: Record<string, unknown>) {
   const db = getCmsDb();
   if (!db || !["products", "articles", "pages", "homepage_sections", "faqs"].includes(resource)) return;
-  const mediaIds = [...collectMediaIds(payload)].filter(Boolean);
+  const mediaRefs = collectExplicitMediaRefs(payload);
   await db.prepare("DELETE FROM media_usages WHERE entity_type = ? AND entity_id = ?").bind(resource, id).run();
-  for (const mediaId of mediaIds) {
+  for (const [mediaId, fieldName] of mediaRefs) {
     await db
       .prepare("INSERT OR IGNORE INTO media_usages (id, media_id, entity_type, entity_id, field_name) VALUES (?, ?, ?, ?, ?)")
-      .bind(crypto.randomUUID(), mediaId, resource, id, "auto")
+      .bind(crypto.randomUUID(), mediaId, resource, id, fieldName)
       .run();
   }
   await db.prepare("UPDATE media_assets SET usage_count = (SELECT COUNT(*) FROM media_usages WHERE media_id = media_assets.id)").run();

@@ -679,9 +679,11 @@ function MediaUploadPanel({ onUploaded }: { onUploaded: () => void }) {
         <span className="text-xs font-black text-white/58">素材分组</span>
         <select value={group} onChange={(event) => setGroup(event.target.value)} className="h-10 rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none">
           <option value="brand">brand</option>
-          <option value="product">product</option>
-          <option value="article">article</option>
-          <option value="page">page</option>
+          <option value="products">products</option>
+          <option value="articles">articles</option>
+          <option value="pages">pages</option>
+          <option value="homepage">homepage</option>
+          <option value="faq">faq</option>
         </select>
       </label>
       <div className="grid content-end gap-1">
