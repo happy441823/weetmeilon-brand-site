@@ -196,16 +196,22 @@ export function AdminCmsClient() {
     });
   }
 
-  async function workflow(action: "submit_review" | "publish" | "offline") {
+  async function workflow(action: "submit_review" | "return_to_draft" | "schedule" | "cancel_schedule" | "set_coming_soon" | "publish" | "offline" | "archive") {
     if (!selected || !config) return;
     setMessage("");
     startTransition(async () => {
       try {
         const id = resourceItemKey(selected, config);
+        const body: Record<string, unknown> = { _action: action };
+        if (action === "schedule") {
+          const scheduledAt = window.prompt("请输入定时发布时间 ISO，例如 2026-06-18T10:00:00.000Z");
+          if (!scheduledAt) return;
+          body.scheduled_at = scheduledAt;
+        }
         const response = await fetch(`/api/admin/resource/${resource}/${encodeURIComponent(id)}`, {
           method: "PATCH",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ _action: action })
+          body: JSON.stringify(body)
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "状态操作失败。");
@@ -408,12 +414,16 @@ export function AdminCmsClient() {
                       onRemove={(role) => void mutateAdminRole(role, "DELETE")}
                       onSetActive={(isActive) => void setAdminActive(isActive)}
                     />
-                  ) : null}
-                  {selected && ["products", "articles", "pages"].includes(resource) ? (
+                  ) : null}                  {selected && ["products", "articles", "pages"].includes(resource) ? (
                     <div className="grid grid-cols-3 gap-2">
                       <button type="button" onClick={() => workflow("submit_review")} className="rounded-lg border border-white/12 px-2 py-2 text-xs font-bold">提交审核</button>
+                      <button type="button" onClick={() => workflow("return_to_draft")} className="rounded-lg border border-white/12 px-2 py-2 text-xs font-bold">退回草稿</button>
+                      <button type="button" onClick={() => workflow("schedule")} className="rounded-lg border border-white/12 px-2 py-2 text-xs font-bold">定时发布</button>
+                      <button type="button" onClick={() => workflow("cancel_schedule")} className="rounded-lg border border-white/12 px-2 py-2 text-xs font-bold">取消定时</button>
+                      {resource === "products" ? <button type="button" onClick={() => workflow("set_coming_soon")} className="rounded-lg border border-white/12 px-2 py-2 text-xs font-bold">即将上新</button> : null}
                       <button type="button" onClick={() => workflow("publish")} className="rounded-lg border border-mint-300/35 px-2 py-2 text-xs font-bold text-mint-300">发布</button>
                       <button type="button" onClick={() => workflow("offline")} className="rounded-lg border border-white/12 px-2 py-2 text-xs font-bold">下线</button>
+                      <button type="button" onClick={() => workflow("archive")} className="rounded-lg border border-white/12 px-2 py-2 text-xs font-bold">归档</button>
                     </div>
                   ) : null}
                   {selected ? <button type="button" onClick={remove} className="rounded-lg border border-red-300/30 px-4 py-2 text-sm font-black text-red-200">删除</button> : null}

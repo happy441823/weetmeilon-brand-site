@@ -33,8 +33,19 @@ export async function PATCH(request: Request, { params }: Params) {
     let item;
 
     if (action) {
-      const nextStatus = assertWorkflowAction(resource, action, admin.roles);
-      item = await setWorkflowStatus(resource, id, nextStatus, admin.id);
+      const current = await getResourceItem(resource, id);
+      if (!current) {
+        return NextResponse.json({ error: "内容不存在。" }, { status: 404 });
+      }
+      const scheduledAt = typeof body.scheduled_at === "string" ? body.scheduled_at : null;
+      const nextStatus = assertWorkflowAction({
+        resource,
+        action,
+        roles: admin.roles,
+        currentStatus: String(current.status || ""),
+        scheduledAt
+      });
+      item = await setWorkflowStatus(resource, id, nextStatus, admin.id, { scheduledAt });
     } else {
       item = await updateResourceItem(resource, id, sanitizeUpdatePayload(body));
     }

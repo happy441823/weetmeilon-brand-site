@@ -195,7 +195,7 @@ export async function deleteResourceItem(resource: string, id: string) {
   return { ok: true };
 }
 
-export async function setWorkflowStatus(resource: string, id: string, status: string, actorId: string) {
+export async function setWorkflowStatus(resource: string, id: string, status: string, actorId: string, options: { scheduledAt?: string | null } = {}) {
   const allowed = new Set(["products", "articles", "pages"]);
   if (!allowed.has(resource)) {
     throw new Error("该资源不支持发布工作流。");
@@ -206,21 +206,32 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
   if (!db) throw new Error("CMS_DB 未绑定。");
 
   const now = new Date().toISOString();
+  const current = await getResourceItem(resource, id);
   const patch: Record<string, unknown> = { status };
   if (status === "published") {
     patch.published_at = now;
     if (resource === "articles") {
-      patch.first_published_at = now;
+      patch.first_published_at = current?.first_published_at || now;
       patch.last_published_by = actorId;
     } else {
       patch.published_by = actorId;
     }
+    patch.reviewed_by = actorId;
   }
   if (status === "pending_review") {
     patch.reviewed_by = null;
   }
-  if (status === "offline") {
+  if (status === "scheduled") {
+    patch.scheduled_at = options.scheduledAt;
     patch.reviewed_by = actorId;
+  }
+  if (status === "draft" || status === "offline") {
+    patch.scheduled_at = null;
+  }
+  if (status === "coming_soon" && resource === "products") {
+    patch.buy_button_enabled = 0;
+    patch.tmall_enabled = 0;
+    patch.jd_enabled = 0;
   }
 
   const names = Object.keys(patch);
@@ -228,6 +239,22 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
     .prepare(`UPDATE ${quote(config.table)} SET ${names.map((name) => `${quote(name)} = ?`).join(", ")}, updated_at = ? WHERE id = ?`)
     .bind(...Object.values(patch), now, id)
     .run();
+
+  if (status === "scheduled" && options.scheduledAt) {
+    await db
+      .prepare(
+        `INSERT INTO publish_jobs (id, entity_type, entity_id, action, status, run_at, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, 'publish', 'pending', ?, ?, ?, ?)`
+      )
+      .bind(crypto.randomUUID(), resource, id, options.scheduledAt, actorId, now, now)
+      .run();
+  }
+  if (status === "draft") {
+    await db
+      .prepare("UPDATE publish_jobs SET status = 'cancelled', updated_at = ? WHERE entity_type = ? AND entity_id = ? AND status = 'pending'")
+      .bind(now, resource, id)
+      .run();
+  }
 
   await createRevisionIfNeeded(resource, id, `状态改为 ${status}`);
   return getResourceItem(resource, id);
