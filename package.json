@@ -13,7 +13,7 @@
     "cms:migrate:preview": "wrangler d1 migrations apply sweetmeilon-cms-dev --env preview --remote",
     "cms:seed": "node scripts/cms-seed-from-static.mjs",
     "cms:backup": "node scripts/cms-backup-local.mjs",
-    "test": "node --test tests/cms/*.test.mjs",
+    "test": "tsx --test tests/cms/*.test.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "catalog:discover": "node scripts/discover-store-products.mjs",
     "catalog:normalize": "node scripts/normalize-products.mjs",
@@ -38,6 +38,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
+    "tsx": "^4.22.4",
     "typescript": "^5.7.2",
     "wrangler": "^4.68.0"
   }

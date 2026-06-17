@@ -13,6 +13,11 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    "CF_ACCESS_AUDIENCE": "REPLACE_WITH_PRODUCTION_ACCESS_AUDIENCE",
+    "CF_ACCESS_ISSUER": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
+    "CMS_ALLOW_LOCAL_ADMIN": "false"
+  },
   "d1_databases": [
     {
       "binding": "CMS_DB",
@@ -33,6 +38,11 @@
   },
   "env": {
     "preview": {
+      "vars": {
+        "CF_ACCESS_AUDIENCE": "REPLACE_WITH_PREVIEW_ACCESS_AUDIENCE",
+        "CF_ACCESS_ISSUER": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
+        "CMS_ALLOW_LOCAL_ADMIN": "false"
+      },
       "d1_databases": [
         {
           "binding": "CMS_DB",

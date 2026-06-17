@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCmsDb } from "./env";
+import { getLocalAdminEmail, highestCmsRole, verifyCloudflareAccessJwt } from "./auth-core";
 import type { CmsRole } from "./schema";
 
 export type AdminContext = {
@@ -8,8 +9,6 @@ export type AdminContext = {
   name: string;
   roles: CmsRole[];
 };
-
-const roleOrder: CmsRole[] = ["viewer", "editor", "reviewer", "super_admin"];
 
 export class AdminAuthError extends Error {
   status: number;
@@ -32,23 +31,54 @@ function header(request: Request, name: string) {
   return request.headers.get(name) || request.headers.get(name.toLowerCase()) || "";
 }
 
-export function getAccessEmail(request: Request) {
-  return (
-    header(request, "cf-access-authenticated-user-email") ||
-    header(request, "x-authenticated-user-email") ||
-    header(request, "x-admin-email")
-  ).trim().toLowerCase();
+function accessJwtConfig() {
+  const audience = process.env.CF_ACCESS_AUDIENCE || process.env.CLOUDFLARE_ACCESS_AUDIENCE || "";
+  const issuer =
+    process.env.CF_ACCESS_ISSUER ||
+    (process.env.CF_ACCESS_TEAM_DOMAIN ? `https://${process.env.CF_ACCESS_TEAM_DOMAIN}` : "");
+
+  return {
+    audience,
+    issuer: issuer.replace(/\/$/, ""),
+    jwksUrl: process.env.CF_ACCESS_JWKS_URL
+  };
+}
+
+function localAdminEmailForRequest(request: Request) {
+  return getLocalAdminEmail({
+    allowLocalAdmin: process.env.CMS_ALLOW_LOCAL_ADMIN,
+    localAdminEmail: process.env.CMS_LOCAL_ADMIN_EMAIL,
+    nodeEnv: process.env.NODE_ENV,
+    requestUrl: request.url
+  });
+}
+
+export async function getAccessEmail(request: Request) {
+  const localEmail = localAdminEmailForRequest(request);
+  if (localEmail) {
+    return localEmail;
+  }
+
+  const token = header(request, "cf-access-jwt-assertion");
+  const config = accessJwtConfig();
+  if (!token) {
+    throw new AdminAuthError("未通过 Cloudflare Access 验证，无法进入后台。", 401);
+  }
+  if (!config.audience || !config.issuer) {
+    throw new AdminAuthError("Cloudflare Access audience/issuer 尚未配置，后台已拒绝请求。", 503);
+  }
+
+  try {
+    const result = await verifyCloudflareAccessJwt(token, config);
+    return result.email;
+  } catch {
+    throw new AdminAuthError("Cloudflare Access JWT 验证失败，无法进入后台。", 401);
+  }
 }
 
 export async function getCurrentAdmin(request: Request): Promise<AdminContext> {
-  const email = getAccessEmail(request);
-  const allowLocal = process.env.CMS_ALLOW_LOCAL_ADMIN === "true" || process.env.NODE_ENV !== "production";
-  const localEmail = process.env.CMS_LOCAL_ADMIN_EMAIL || "preview-admin@sweetmeilon.com";
-  const effectiveEmail = email || (allowLocal ? localEmail : "");
-
-  if (!effectiveEmail) {
-    throw new AdminAuthError("未通过 Cloudflare Access 验证，无法进入后台。", 401);
-  }
+  const effectiveEmail = await getAccessEmail(request);
+  const allowLocal = Boolean(localAdminEmailForRequest(request));
 
   const db = getCmsDb();
   if (!db) {
@@ -59,7 +89,7 @@ export async function getCurrentAdmin(request: Request): Promise<AdminContext> {
     return {
       id: "local-admin",
       email: effectiveEmail,
-      name: "本地预览管理员",
+      name: "本地开发管理员",
       roles: ["super_admin"]
     };
   }
@@ -85,9 +115,9 @@ export async function getCurrentAdmin(request: Request): Promise<AdminContext> {
     .bind(effectiveEmail)
     .all<{ name: CmsRole }>();
 
-  let roles = roleRows.results.map((row: { name: CmsRole }) => row.name);
+  const roles = roleRows.results.map((row: { name: CmsRole }) => row.name);
   if (roles.length === 0 && allowLocal) {
-    roles = ["super_admin"];
+    roles.push("super_admin");
   }
 
   if (roles.length === 0) {
@@ -123,7 +153,7 @@ export async function requireRole(request: Request, roles: CmsRole[]) {
 }
 
 export function highestRole(admin: AdminContext) {
-  return admin.roles.slice().sort((a, b) => roleOrder.indexOf(b) - roleOrder.indexOf(a))[0] || "viewer";
+  return highestCmsRole(admin.roles);
 }
 
 export async function writeAuditLog(input: {
