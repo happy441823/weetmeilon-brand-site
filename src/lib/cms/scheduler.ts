@@ -6,6 +6,7 @@ export type PublishJobRow = {
   entity_id: string;
   action: string;
   attempts: number;
+  run_at: string;
 };
 
 export type SchedulerResult = {
@@ -69,11 +70,14 @@ async function publishEntity(db: SchedulerDb, job: PublishJobRow, now: string) {
     job.entity_type === "articles"
       ? `status = 'published', published_at = ?, first_published_at = COALESCE(first_published_at, ?), ${quote(target.actorField)} = COALESCE(${quote(target.actorField)}, 'scheduled_job'), updated_at = ?`
       : `status = 'published', published_at = ?, ${quote(target.actorField)} = COALESCE(${quote(target.actorField)}, 'scheduled_job'), updated_at = ?`;
-  const values = job.entity_type === "articles" ? [now, now, now, job.entity_id] : [now, now, job.entity_id];
+  const values = job.entity_type === "articles" ? [now, now, now, job.entity_id, job.run_at] : [now, now, job.entity_id, job.run_at];
 
-  const result = await db.prepare(`UPDATE ${quote(target.table)} SET ${fields} WHERE id = ?`).bind(...values).run();
+  const result = await db
+    .prepare(`UPDATE ${quote(target.table)} SET ${fields} WHERE id = ? AND status = 'scheduled' AND scheduled_at = ?`)
+    .bind(...values)
+    .run();
   if (changedRows(result) !== 1) {
-    throw new Error(`Scheduled target not found: ${job.entity_type}/${job.entity_id}`);
+    throw new Error(`Scheduled target not publishable: ${job.entity_type}/${job.entity_id}`);
   }
 }
 
@@ -82,7 +86,7 @@ export async function runDuePublishJobs(db: SchedulerDb, options: { now?: Date; 
   const limit = Math.min(Math.max(options.limit || 20, 1), 100);
   const maxAttempts = Math.min(Math.max(options.maxAttempts || 3, 1), 10);
   const jobs = await db
-    .prepare("SELECT id, entity_type, entity_id, action, attempts FROM publish_jobs WHERE status = 'pending' AND run_at <= ? ORDER BY run_at ASC LIMIT ?")
+    .prepare("SELECT id, entity_type, entity_id, action, attempts, run_at FROM publish_jobs WHERE status = 'pending' AND run_at <= ? ORDER BY run_at ASC LIMIT ?")
     .bind(now, limit)
     .all<PublishJobRow>();
 

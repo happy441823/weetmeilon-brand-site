@@ -18,3 +18,13 @@ test("admin navigation exposes administrator management", () => {
   assert.equal(system.items.some((item) => item.resource === "admin_users"), true);
   assert.equal(system.items.some((item) => item.resource === "admin_roles"), true);
 });
+
+test("publish jobs are not exposed as a writable navigation resource", () => {
+  const allItems = adminNavigation.flatMap((group) => group.items);
+  assert.equal(allItems.some((item) => item.resource === "publish_jobs"), false);
+
+  const jobs = getResourceConfig("publish_jobs");
+  assert.deepEqual(jobs.fields, []);
+  assert.deepEqual(jobs.mutableRoles, ["super_admin"]);
+  assert.deepEqual(jobs.listColumns, ["entity_type", "entity_id", "status", "run_at"]);
+});

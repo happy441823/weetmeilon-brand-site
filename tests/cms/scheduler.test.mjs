@@ -35,7 +35,7 @@ class SchedulerD1 {
           return { success: true, meta: { changes: job ? 1 : 0 } };
         }
         if (/UPDATE "articles" SET/.test(sql) || /UPDATE "products" SET/.test(sql) || /UPDATE "pages" SET/.test(sql)) {
-          if (db.entityChanges === 1) db.entities.set(this.values.at(-1), { sql, values: this.values });
+          if (db.entityChanges === 1) db.entities.set(this.values.at(-2), { sql, values: this.values });
           return { success: true, meta: { changes: db.entityChanges } };
         }
         if (/SET status = 'completed'/.test(sql)) {
@@ -100,7 +100,7 @@ test("scheduled publish job retries before max attempts and fails when target is
   const retry = await runDuePublishJobs(db, { now: new Date("2026-06-17T00:01:00.000Z"), maxAttempts: 3 });
   assert.deepEqual(retry, { picked: 1, locked: 1, completed: 0, failed: 0, retried: 1 });
   assert.equal(db.jobs[0].status, "pending");
-  assert.match(db.jobs[0].last_error, /Scheduled target not found/);
+  assert.match(db.jobs[0].last_error, /Scheduled target not publishable/);
 
   db.jobs[0].attempts = 2;
   const failed = await runDuePublishJobs(db, { now: new Date("2026-06-17T00:02:00.000Z"), maxAttempts: 3 });

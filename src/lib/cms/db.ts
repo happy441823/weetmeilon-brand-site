@@ -2,6 +2,7 @@ import { getCmsDb, getCmsMediaBucket } from "./env";
 import { cmsBackupTables } from "./backup";
 import { getResourceConfig, type CmsField } from "./schema";
 import { assertSafeUrl, markdownSourceToHtml, normalizeCmsFieldValue, normalizeJsonText, slugify } from "./validation";
+import { validatePublishQuality } from "./workflow";
 
 type QueryOptions = {
   q?: string;
@@ -186,6 +187,9 @@ export async function deleteResourceItem(resource: string, id: string) {
   if (resource === "audit_logs") {
     throw new Error("操作日志不允许从后台删除。");
   }
+  if (resource === "publish_jobs") {
+    throw new Error("发布任务只能由工作流服务维护，不能通过通用 CRUD 删除。");
+  }
   if (resource === "media_assets") {
     const usage = await db.prepare("SELECT COUNT(*) AS total FROM media_usages WHERE media_id = ?").bind(id).first<{ total: number }>();
     if ((usage?.total || 0) > 0) {
@@ -214,9 +218,16 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
 
   const now = new Date().toISOString();
   const current = await getResourceItem(resource, id);
+  if (!current) {
+    throw new Error("内容不存在，不能执行工作流操作。");
+  }
+  if (status === "published" || status === "scheduled") {
+    validatePublishQuality(resource, current);
+  }
   const patch: Record<string, unknown> = { status };
   if (status === "published") {
     patch.published_at = now;
+    patch.scheduled_at = null;
     if (resource === "articles") {
       patch.first_published_at = current?.first_published_at || now;
       patch.last_published_by = actorId;
@@ -232,7 +243,7 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
     patch.scheduled_at = options.scheduledAt;
     patch.reviewed_by = actorId;
   }
-  if (status === "draft" || status === "offline") {
+  if (status === "draft" || status === "offline" || status === "archived") {
     patch.scheduled_at = null;
   }
   if (status === "coming_soon" && resource === "products") {
@@ -249,6 +260,10 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
 
   if (status === "scheduled" && options.scheduledAt) {
     await db
+      .prepare("UPDATE publish_jobs SET status = 'cancelled', updated_at = ? WHERE entity_type = ? AND entity_id = ? AND status = 'pending'")
+      .bind(now, resource, id)
+      .run();
+    await db
       .prepare(
         `INSERT INTO publish_jobs (id, entity_type, entity_id, action, status, run_at, created_by, created_at, updated_at)
          VALUES (?, ?, ?, 'publish', 'pending', ?, ?, ?, ?)`
@@ -256,7 +271,7 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
       .bind(crypto.randomUUID(), resource, id, options.scheduledAt, actorId, now, now)
       .run();
   }
-  if (status === "draft") {
+  if (["draft", "published", "offline", "archived"].includes(status)) {
     await db
       .prepare("UPDATE publish_jobs SET status = 'cancelled', updated_at = ? WHERE entity_type = ? AND entity_id = ? AND status = 'pending'")
       .bind(now, resource, id)

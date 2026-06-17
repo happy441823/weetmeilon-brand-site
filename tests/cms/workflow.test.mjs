@@ -4,6 +4,9 @@ import {
   assertWorkflowAction,
   sanitizeCreatePayload,
   sanitizeUpdatePayload,
+  validateArticlePublish,
+  validatePagePublish,
+  validateProductPublish,
   workflowTransitions
 } from "../../src/lib/cms/workflow.ts";
 
@@ -43,4 +46,27 @@ test("workflow validates from-to status, schedule time and product-only coming s
   assert.equal(assertWorkflowAction({ resource: "articles", action: "schedule", roles: ["reviewer"], currentStatus: "pending_review", scheduledAt: "2999-01-01T00:00:00.000Z" }), "scheduled");
   assert.throws(() => assertWorkflowAction({ resource: "articles", action: "set_coming_soon", roles: ["reviewer"], currentStatus: "draft" }), /不支持此工作流动作/);
   assert.equal(assertWorkflowAction({ resource: "products", action: "set_coming_soon", roles: ["reviewer"], currentStatus: "draft" }), "coming_soon");
+});
+
+test("scheduled_at and publish_jobs are protected from generic writes", () => {
+  assert.throws(() => sanitizeCreatePayload("products", { name: "A", scheduled_at: "2999-01-01T00:00:00.000Z" }), /scheduled_at/);
+  assert.throws(() => sanitizeUpdatePayload({ scheduled_at: "2999-01-01T00:00:00.000Z" }), /scheduled_at/);
+  assert.throws(() => sanitizeCreatePayload("publish_jobs", { entity_id: "attacker" }), /通用 CRUD 创建/);
+  assert.throws(() => sanitizeUpdatePayload({ status: "pending" }, "publish_jobs"), /通用 CRUD 更新/);
+});
+
+test("scheduled content can leave schedule through offline or archive", () => {
+  assert.equal(assertWorkflowAction({ resource: "products", action: "offline", roles: ["reviewer"], currentStatus: "scheduled" }), "offline");
+  assert.equal(assertWorkflowAction({ resource: "products", action: "archive", roles: ["reviewer"], currentStatus: "scheduled" }), "archived");
+});
+
+test("publish quality validation rejects incomplete content", () => {
+  assert.throws(() => validateProductPublish({ name: "P", slug: "p", summary: "s", body_html: "<p>x</p>", primary_category_id: "cat" }), /商品主图/);
+  assert.doesNotThrow(() =>
+    validateProductPublish({ name: "P", slug: "p", summary: "s", body_html: "<p>x</p>", primary_category_id: "cat", cover_media_id: "media_1" })
+  );
+  assert.throws(() => validateArticlePublish({ title: "A", slug: "a", excerpt: "e" }), /文章正文/);
+  assert.doesNotThrow(() => validateArticlePublish({ title: "A", slug: "a", excerpt: "e", markdown_source: "# A" }));
+  assert.throws(() => validatePagePublish({ title: "P", slug: "p" }), /页面正文/);
+  assert.doesNotThrow(() => validatePagePublish({ title: "P", slug: "p", modules_json: "[]" }));
 });

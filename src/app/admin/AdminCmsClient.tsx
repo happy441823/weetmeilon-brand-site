@@ -53,6 +53,7 @@ const preferredResources = [
 export const workflowManagedClientFields = new Set([
   "status",
   "published_at",
+  "scheduled_at",
   "published_by",
   "reviewed_by",
   "first_published_at",

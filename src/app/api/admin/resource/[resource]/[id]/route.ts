@@ -47,7 +47,7 @@ export async function PATCH(request: Request, { params }: Params) {
       });
       item = await setWorkflowStatus(resource, id, nextStatus, admin.id, { scheduledAt });
     } else {
-      item = await updateResourceItem(resource, id, sanitizeUpdatePayload(body));
+      item = await updateResourceItem(resource, id, sanitizeUpdatePayload(body, resource));
     }
 
     await writeAuditLog({ request, actor: admin, action: action || "update", entityType: resource, entityId: id, summary: `更新${config.label}` });

@@ -401,21 +401,9 @@ export const cmsResources = {
     label: "发布任务",
     labelPlural: "定时发布",
     searchable: ["entity_type", "entity_id", "status"],
-    mutableRoles: ["super_admin", "reviewer"],
+    mutableRoles: ["super_admin"],
     listColumns: ["entity_type", "entity_id", "status", "run_at"],
-    fields: [
-      { name: "entity_type", label: "内容类型", type: "text", required: true },
-      { name: "entity_id", label: "内容 ID", type: "text", required: true },
-      { name: "action", label: "动作", type: "text" },
-      { name: "status", label: "状态", type: "select", options: [
-        { label: "待执行", value: "pending" },
-        { label: "执行中", value: "running" },
-        { label: "完成", value: "completed" },
-        { label: "失败", value: "failed" },
-        { label: "已取消", value: "cancelled" }
-      ] },
-      { name: "run_at", label: "执行时间", type: "datetime", required: true }
-    ]
+    fields: []
   }
 } satisfies Record<string, CmsResourceConfig>;
 
@@ -448,7 +436,6 @@ export const adminNavigation = [
   { group: "系统", items: [
     { label: "管理员管理", resource: "admin_users" },
     { label: "角色管理", resource: "admin_roles" },
-    { label: "定时发布", resource: "publish_jobs" },
     { label: "操作日志", resource: "audit_logs" },
     { label: "导入导出与备份", resource: "backup" }
   ] }

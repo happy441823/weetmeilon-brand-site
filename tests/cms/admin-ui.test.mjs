@@ -9,6 +9,7 @@ test("workflow resource save payload omits server-managed status fields", () => 
     published_at: "2026-06-17T00:00:00.000Z",
     published_by: "attacker",
     reviewed_by: "attacker",
+    scheduled_at: "2999-01-01T00:00:00.000Z",
     first_published_at: "2026-06-17T00:00:00.000Z",
     last_published_by: "attacker",
     body_html: "<p>safe</p>"

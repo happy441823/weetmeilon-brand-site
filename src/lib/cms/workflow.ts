@@ -8,11 +8,14 @@ export const workflowResources = new Set<CmsResource>(["products", "articles", "
 export const workflowManagedFields = new Set([
   "status",
   "published_at",
+  "scheduled_at",
   "published_by",
   "reviewed_by",
   "first_published_at",
   "last_published_by"
 ]);
+
+export const workflowInternalResources = new Set(["publish_jobs"]);
 
 export type WorkflowTransition = {
   from: WorkflowStatus[];
@@ -29,8 +32,8 @@ export const workflowTransitions: Record<WorkflowAction, WorkflowTransition> = {
   cancel_schedule: { from: ["scheduled"], to: "draft", roles: ["reviewer", "super_admin"] },
   set_coming_soon: { from: ["draft", "pending_review", "offline"], to: "coming_soon", roles: ["reviewer", "super_admin"], resources: ["products"] },
   publish: { from: ["pending_review", "scheduled"], to: "published", roles: ["reviewer", "super_admin"] },
-  offline: { from: ["published", "coming_soon"], to: "offline", roles: ["reviewer", "super_admin"] },
-  archive: { from: ["draft", "pending_review", "offline"], to: "archived", roles: ["reviewer", "super_admin"] }
+  offline: { from: ["scheduled", "published", "coming_soon"], to: "offline", roles: ["reviewer", "super_admin"] },
+  archive: { from: ["draft", "pending_review", "scheduled", "offline"], to: "archived", roles: ["reviewer", "super_admin"] }
 };
 
 export class WorkflowError extends Error {
@@ -51,6 +54,9 @@ export function findWorkflowField(input: Record<string, unknown>) {
 }
 
 export function sanitizeCreatePayload(resource: string, input: Record<string, unknown>) {
+  if (workflowInternalResources.has(resource)) {
+    throw new WorkflowError("该资源只能由工作流服务写入，不能通过通用 CRUD 创建。", 403);
+  }
   const blocked = findWorkflowField(input);
   if (!blocked) {
     return input;
@@ -62,12 +68,57 @@ export function sanitizeCreatePayload(resource: string, input: Record<string, un
   throw new WorkflowError(`字段 ${blocked} 由工作流服务端管理，不能通过通用创建接口写入。`, 400);
 }
 
-export function sanitizeUpdatePayload(input: Record<string, unknown>) {
+export function sanitizeUpdatePayload(input: Record<string, unknown>, resource = "") {
+  if (workflowInternalResources.has(resource)) {
+    throw new WorkflowError("该资源只能由工作流服务写入，不能通过通用 CRUD 更新。", 403);
+  }
   const blocked = findWorkflowField(input);
   if (blocked) {
     throw new WorkflowError(`字段 ${blocked} 由工作流服务端管理，不能通过通用更新接口写入。`, 400);
   }
   return input;
+}
+
+function requireText(row: Record<string, unknown>, field: string, label: string) {
+  if (!String(row[field] || "").trim()) {
+    throw new WorkflowError(`${label}不能为空，不能发布。`, 400);
+  }
+}
+
+export function validateProductPublish(row: Record<string, unknown> | null | undefined) {
+  if (!row) throw new WorkflowError("商品不存在，不能发布。", 404);
+  requireText(row, "name", "商品名称");
+  requireText(row, "slug", "商品 slug");
+  requireText(row, "summary", "商品摘要");
+  requireText(row, "body_html", "商品完整介绍");
+  requireText(row, "primary_category_id", "商品一级分类");
+  requireText(row, "cover_media_id", "商品主图");
+}
+
+export function validateArticlePublish(row: Record<string, unknown> | null | undefined) {
+  if (!row) throw new WorkflowError("文章不存在，不能发布。", 404);
+  requireText(row, "title", "文章标题");
+  requireText(row, "slug", "文章 slug");
+  requireText(row, "excerpt", "文章摘要");
+  if (!String(row.body_html || "").trim() && !String(row.markdown_source || "").trim() && !String(row.content_blocks_json || "").trim()) {
+    throw new WorkflowError("文章正文不能为空，不能发布。", 400);
+  }
+}
+
+export function validatePagePublish(row: Record<string, unknown> | null | undefined) {
+  if (!row) throw new WorkflowError("页面不存在，不能发布。", 404);
+  requireText(row, "title", "页面标题");
+  requireText(row, "slug", "页面 slug");
+  if (!String(row.body_html || "").trim() && !String(row.modules_json || "").trim()) {
+    throw new WorkflowError("页面正文或模块不能为空，不能发布。", 400);
+  }
+}
+
+export function validatePublishQuality(resource: string, row: Record<string, unknown> | null | undefined) {
+  if (resource === "products") return validateProductPublish(row);
+  if (resource === "articles") return validateArticlePublish(row);
+  if (resource === "pages") return validatePagePublish(row);
+  throw new WorkflowError("该资源不支持发布校验。", 400);
 }
 
 export function canUseWorkflowAction(roles: CmsRole[], action: WorkflowAction) {
