@@ -5,10 +5,9 @@ import { ImageFrame } from "@/components/ImageFrame";
 import { ProductChannelButtons } from "@/components/ProductChannelButtons";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TrackView } from "@/components/TrackView";
+import { getPublicProductBySlugWithCmsFallback, getPublicSeriesWithCmsFallback } from "@/lib/cms/public-products";
 import {
-  getPublicCatalogProductBySlug,
-  getPublicCatalogProducts,
-  getSeriesById
+  getPublicCatalogProducts
 } from "@/lib/catalog";
 import { canonicalPath } from "@/lib/seo";
 
@@ -16,13 +15,16 @@ type ProductPageProps = {
   params: Promise<{ slug: string }>;
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export function generateStaticParams() {
   return getPublicCatalogProducts().map((product) => ({ slug: product.slug }));
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = getPublicCatalogProductBySlug(slug);
+  const product = await getPublicProductBySlugWithCmsFallback(slug);
 
   if (!product) {
     return {};
@@ -42,14 +44,15 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = getPublicCatalogProductBySlug(slug);
+  const product = await getPublicProductBySlugWithCmsFallback(slug);
 
   if (!product) {
     notFound();
   }
 
   const isUpcoming = product.status === "upcoming";
-  const seriesName = getSeriesById(product.seriesId)?.name || "蜜女郎精选";
+  const series = await getPublicSeriesWithCmsFallback();
+  const seriesName = series.find((item) => item.id === product.seriesId)?.name || "蜜女郎精选";
 
   return (
     <main>

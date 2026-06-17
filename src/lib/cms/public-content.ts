@@ -12,22 +12,32 @@ export type PublicReadResult<T> = {
 
 const publicStatusByResource: Record<string, string[]> = {
   products: ["published", "coming_soon"],
+  categories: [],
+  product_series: [],
   articles: ["published"],
   pages: ["published"],
   faqs: [],
   navigation_items: [],
+  footer_groups: [],
+  footer_items: [],
   homepage_sections: [],
-  site_settings: []
+  site_settings: [],
+  redirects: []
 };
 
 const tableByResource: Record<string, string> = {
   products: "products",
+  categories: "categories",
+  product_series: "product_series",
   articles: "articles",
   pages: "pages",
   faqs: "faqs",
   navigation_items: "navigation_items",
+  footer_groups: "footer_groups",
+  footer_items: "footer_items",
   homepage_sections: "homepage_sections",
-  site_settings: "site_settings"
+  site_settings: "site_settings",
+  redirects: "redirects"
 };
 
 function quote(name: string) {
@@ -44,6 +54,15 @@ export function publicVisibilityWhere(resource: string) {
   }
   if (resource === "navigation_items") {
     return "is_visible = 1";
+  }
+  if (resource === "categories" || resource === "product_series") {
+    return "is_active = 1";
+  }
+  if (resource === "footer_groups" || resource === "footer_items") {
+    return "is_visible = 1";
+  }
+  if (resource === "redirects") {
+    return "is_active = 1";
   }
   if (resource === "homepage_sections") {
     return "is_enabled = 1";
