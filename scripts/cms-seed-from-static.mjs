@@ -308,7 +308,10 @@ async function main() {
     r2UploadNote: "This seed writes media relationships and URLs only when source data already has them. Uploading binary images to R2 must run as a separate explicit step after dev R2 is configured."
   };
 
-  if (options["print-sql"]) console.log(sql);
+  if (options["print-sql"]) {
+    console.log(sql);
+    if (!options.apply) return;
+  }
   if (options.apply) await applySql(sql, options);
   await writeReport(report);
   console.log(`CMS migration report written: ${reportPath}`);

@@ -51,7 +51,7 @@
         {
           "binding": "CMS_DB",
           "database_name": "sweetmeilon-cms-dev",
-          "database_id": "REPLACE_WITH_DEV_D1_DATABASE_ID"
+          "database_id": "9dcb92ba-12b3-41e2-81d1-a80f87882053"
         }
       ],
       "r2_buckets": [
