@@ -24,6 +24,16 @@ interface Fetcher {
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
 }
 
+interface ScheduledController {
+  scheduledTime: number;
+  cron: string;
+}
+
+interface ExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+  passThroughOnException?(): void;
+}
+
 interface CloudflareEnv {
   ASSETS: Fetcher;
   CMS_DB: D1Database;
