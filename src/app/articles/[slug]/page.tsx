@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreButtons } from "@/components/StoreButtons";
 import { TrackView } from "@/components/TrackView";
-import { getPublishedArticle, publishedArticles } from "@/lib/articles";
+import { getPublishedArticleBySlug, publishedArticles } from "@/lib/articles";
 import { canonicalPath } from "@/lib/seo";
 
 type ArticlePageProps = {
@@ -17,7 +17,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = getPublishedArticle(slug);
+  const article = await getPublishedArticleBySlug(slug);
 
   if (!article) {
     return {};
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
 export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const article = getPublishedArticle(slug);
+  const article = await getPublishedArticleBySlug(slug);
 
   if (!article) {
     notFound();

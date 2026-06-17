@@ -16,7 +16,8 @@
   "vars": {
     "CF_ACCESS_AUDIENCE": "REPLACE_WITH_PRODUCTION_ACCESS_AUDIENCE",
     "CF_ACCESS_ISSUER": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
-    "CMS_ALLOW_LOCAL_ADMIN": "false"
+    "CMS_ALLOW_LOCAL_ADMIN": "false",
+    "CMS_PUBLIC_D1_READS": "false"
   },
   "d1_databases": [
     {
@@ -41,7 +42,8 @@
       "vars": {
         "CF_ACCESS_AUDIENCE": "REPLACE_WITH_PREVIEW_ACCESS_AUDIENCE",
         "CF_ACCESS_ISSUER": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
-        "CMS_ALLOW_LOCAL_ADMIN": "false"
+        "CMS_ALLOW_LOCAL_ADMIN": "false",
+        "CMS_PUBLIC_D1_READS": "true"
       },
       "d1_databases": [
         {

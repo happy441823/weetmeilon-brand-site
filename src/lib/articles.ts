@@ -1,3 +1,5 @@
+import { getPublicCmsItem, readPublicCmsRows } from "@/lib/cms/public-content";
+
 export type ArticleStatus = "published" | "draft";
 
 export type ArticleSection = {
@@ -211,10 +213,52 @@ export const articles: Article[] = [
 
 export const publishedArticles = articles.filter((article) => article.status === "published" && article.indexable);
 
+function articleFromCms(row: Record<string, unknown>): Article {
+  const body = String(row.body_html || "").replace(/<[^>]*>/g, "").trim();
+  const keywords = (() => {
+    try {
+      const parsed = JSON.parse(String(row.keywords_json || "[]"));
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  return {
+    slug: String(row.slug || ""),
+    title: String(row.title || ""),
+    category: String(row.category_name || "内容"),
+    description: String(row.excerpt || row.seo_description || ""),
+    keywords,
+    outline: [],
+    sections: body ? [{ heading: "正文", body: [body] }] : [],
+    readMinutes: Math.max(1, Math.ceil(body.length / 500)),
+    status: "published",
+    indexable: row.indexable !== 0
+  };
+}
+
+export async function getPublishedArticles() {
+  const result = await readPublicCmsRows<Record<string, unknown>>("articles");
+  const cmsArticles = result.rows.map(articleFromCms).filter((article) => article.slug && article.title && article.indexable);
+  return cmsArticles.length > 0 ? cmsArticles : publishedArticles;
+}
+
 export function getArticle(slug: string) {
   return articles.find((article) => article.slug === slug);
 }
 
 export function getPublishedArticle(slug: string) {
   return publishedArticles.find((article) => article.slug === slug);
+}
+
+export async function getPublishedArticleBySlug(slug: string) {
+  const cmsArticle = await getPublicCmsItem<Record<string, unknown>>("articles", "slug", slug);
+  if (cmsArticle) {
+    const article = articleFromCms(cmsArticle);
+    if (article.slug && article.title && article.indexable) {
+      return article;
+    }
+  }
+  return getPublishedArticle(slug);
 }

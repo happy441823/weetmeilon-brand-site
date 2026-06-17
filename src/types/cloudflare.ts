@@ -7,4 +7,5 @@ export type CmsBindings = {
   CF_ACCESS_JWKS_URL?: string;
   CMS_ALLOW_LOCAL_ADMIN?: string;
   CMS_LOCAL_ADMIN_EMAIL?: string;
+  CMS_PUBLIC_D1_READS?: string;
 };
