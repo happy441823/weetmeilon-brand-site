@@ -402,6 +402,8 @@ export function AdminCmsClient({ initialResource = "dashboard" }: { initialResou
                 </div>
                 {resource === "articles" ? (
                   <ArticleEditorPanel form={form} fields={config.fields} setField={setField} />
+                ) : resource === "pages" || resource === "homepage_sections" ? (
+                  <ModuleEditorPanel resource={resource} form={form} fields={config.fields} setField={setField} />
                 ) : (
                   <div className="grid gap-3">
                     {config.fields.map((field) => (
@@ -591,6 +593,108 @@ function ArticleEditorPanel({
           <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.04] p-3 text-xs leading-6 text-white/58">
             {String(form.body_html || form.markdown_source || form.content_blocks_json || "正文预览将在公开文章页保留标题、段落、列表、引用、表格、图片、链接和 CTA。").slice(0, 420)}
           </div>
+        </article>
+      </section>
+    </div>
+  );
+}
+
+function ModuleEditorPanel({
+  resource,
+  form,
+  fields,
+  setField
+}: {
+  resource: string;
+  form: Record<string, unknown>;
+  fields: Field[];
+  setField: (name: string, value: unknown) => void;
+}) {
+  const [preview, setPreview] = useState<"desktop" | "mobile">("desktop");
+  const baseField = "rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none focus:border-mint-300/60";
+  const isHomepage = resource === "homepage_sections";
+  const jsonField = isHomepage ? "config_json" : "modules_json";
+  const bodyField = isHomepage ? "" : "body_html";
+
+  function renderSmallField(name: string) {
+    const field = fieldByName(fields, name);
+    if (!field) return null;
+    return (
+      <label key={name} className="grid gap-1.5">
+        <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
+        <FieldControl field={field} value={form[name]} onChange={(value) => setField(name, value)} />
+      </label>
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">{isHomepage ? "Homepage Module" : "Page Builder"}</p>
+        {isHomepage ? (
+          <>
+            {renderSmallField("section_key")}
+            {renderSmallField("section_type")}
+          </>
+        ) : (
+          <>
+            {renderSmallField("page_key")}
+            {renderSmallField("slug")}
+          </>
+        )}
+        {renderSmallField("title")}
+        {renderSmallField("subtitle")}
+        {renderSmallField("description")}
+        <div className="grid gap-3 md:grid-cols-2">
+          {renderSmallField("sort_order")}
+          {renderSmallField(isHomepage ? "is_enabled" : "indexable")}
+        </div>
+      </section>
+
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">{isHomepage ? "模块配置 JSON" : "页面模块 JSON"}</p>
+        <textarea
+          value={String(form[jsonField] ?? (isHomepage ? "{}" : "[]"))}
+          onChange={(event) => setField(jsonField, event.target.value)}
+          rows={12}
+          className={`${baseField} py-2 leading-6`}
+        />
+        {bodyField ? (
+          <label className="grid gap-1.5">
+            <span className="text-xs font-black text-white/58">页面正文 HTML</span>
+            <textarea
+              value={String(form[bodyField] ?? "")}
+              onChange={(event) => setField(bodyField, event.target.value)}
+              rows={8}
+              className={`${baseField} py-2 leading-6`}
+            />
+          </label>
+        ) : null}
+      </section>
+
+      {!isHomepage ? (
+        <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">SEO</p>
+          {renderSmallField("seo_title")}
+          {renderSmallField("seo_description")}
+        </section>
+      ) : null}
+
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">Preview</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPreview("desktop")} className={`rounded-full px-3 py-1 text-xs font-black ${preview === "desktop" ? "bg-white text-[#12031d]" : "border border-white/12 text-white/68"}`}>桌面</button>
+            <button type="button" onClick={() => setPreview("mobile")} className={`rounded-full px-3 py-1 text-xs font-black ${preview === "mobile" ? "bg-white text-[#12031d]" : "border border-white/12 text-white/68"}`}>手机</button>
+          </div>
+        </div>
+        <article className={`rounded-xl border border-white/10 bg-[#100019] p-4 ${preview === "mobile" ? "max-w-[320px]" : ""}`}>
+          <p className="text-xs font-black text-mint-300">{isHomepage ? String(form.section_type || "homepage") : String(form.page_key || "page")}</p>
+          <h4 className="mt-2 text-xl font-black text-white">{String(form.title || "未命名模块")}</h4>
+          <p className="mt-2 text-sm leading-6 text-white/60">{String(form.subtitle || form.description || form.seo_description || "预览用于检查标题、说明和模块配置的大致呈现。")}</p>
+          <pre className="mt-4 max-h-48 overflow-auto rounded-lg border border-white/10 bg-black/25 p-3 text-[11px] leading-5 text-white/50">
+            {String(form[jsonField] || (isHomepage ? "{}" : "[]")).slice(0, 900)}
+          </pre>
         </article>
       </section>
     </div>
