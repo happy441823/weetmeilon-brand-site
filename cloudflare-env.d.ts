@@ -18,6 +18,7 @@ interface D1Database {
 
 interface R2Bucket {
   put(key: string, value: ArrayBuffer | ArrayBufferView | string | ReadableStream, options?: { httpMetadata?: { contentType?: string } }): Promise<unknown>;
+  delete(key: string): Promise<void>;
 }
 
 interface Fetcher {
