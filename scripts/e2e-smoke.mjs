@@ -30,6 +30,18 @@ async function expectStatus(path, status = 200) {
   return response;
 }
 
+async function expectNoindex(path, status = 200) {
+  const response = await expectStatus(path, status);
+  const robots = response.headers.get("x-robots-tag") || "";
+  const cache = response.headers.get("cache-control") || "";
+  if (!/noindex/i.test(robots)) {
+    throw new Error(`${path} must return x-robots-tag noindex`);
+  }
+  if (!/no-store/i.test(cache)) {
+    throw new Error(`${path} must return cache-control no-store`);
+  }
+}
+
 async function main() {
   const server = spawn("cmd.exe", ["/c", "npx", "next", "start", "-H", "127.0.0.1", "-p", String(port)], {
     env: { ...process.env, PORT: String(port), CMS_PUBLIC_D1_READS: "false" },
@@ -54,11 +66,15 @@ async function main() {
     await expectStatus("/robots.txt");
     await expectStatus("/articles/how-to-choose-three-products", 404);
 
-    const admin = await expectStatus("/admin");
-    const robots = admin.headers.get("x-robots-tag") || "";
-    if (!/noindex/i.test(robots)) {
-      throw new Error("/admin must return x-robots-tag noindex");
-    }
+    await expectNoindex("/admin");
+    await expectNoindex("/admin/products");
+    await expectNoindex("/admin/articles");
+    await expectNoindex("/admin/pages");
+    await expectNoindex("/admin/homepage");
+    await expectNoindex("/admin/faqs");
+    await expectNoindex("/admin/navigation");
+    await expectNoindex("/admin/footer");
+    await expectNoindex("/api/admin/schema", 401);
 
     console.log("E2E smoke passed");
   } finally {
