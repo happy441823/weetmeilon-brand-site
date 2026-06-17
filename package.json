@@ -11,7 +11,7 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cms:migrate:dev": "wrangler d1 migrations apply sweetmeilon-cms-dev --env preview --local",
     "cms:migrate:preview": "wrangler d1 migrations apply sweetmeilon-cms-dev --env preview --remote",
-    "cms:seed": "node scripts/cms-seed-from-static.mjs",
+    "cms:seed": "tsx scripts/cms-seed-from-static.mjs",
     "cms:bootstrap-admin": "node scripts/cms-bootstrap-admin.mjs",
     "cms:backup": "node scripts/cms-backup-local.mjs",
     "test": "tsx --test tests/cms/*.test.mjs",
