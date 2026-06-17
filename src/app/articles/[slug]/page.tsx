@@ -70,18 +70,22 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_320px]">
           <div className="rounded-[30px] border border-white/10 bg-white/[0.055] p-6 md:p-8">
             <SectionHeader eyebrow="Article" title="正文" />
-            <div className="mt-7 grid gap-8">
-              {article.sections.map((section) => (
-                <section key={section.heading}>
-                  <h2 className="text-2xl font-black text-white">{section.heading}</h2>
-                  <div className="mt-4 grid gap-4 text-sm leading-8 text-aura/68">
-                    {section.body.map((paragraph) => (
-                      <p key={paragraph}>{paragraph}</p>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
+            {article.renderedHtml ? (
+              <div className="cms-richtext mt-7" dangerouslySetInnerHTML={{ __html: article.renderedHtml }} />
+            ) : (
+              <div className="mt-7 grid gap-8">
+                {article.sections.map((section) => (
+                  <section key={section.heading}>
+                    <h2 className="text-2xl font-black text-white">{section.heading}</h2>
+                    <div className="mt-4 grid gap-4 text-sm leading-8 text-aura/68">
+                      {section.body.map((paragraph) => (
+                        <p key={paragraph}>{paragraph}</p>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
           </div>
           <aside className="h-fit rounded-[30px] border border-mint-300/20 bg-plum-950/60 p-6">
             <h2 className="text-xl font-black text-white">购买前提醒</h2>

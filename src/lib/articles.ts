@@ -1,4 +1,5 @@
 import { getPublicCmsItem, readPublicCmsRows } from "@/lib/cms/public-content";
+import { sanitizeHtml } from "@/lib/cms/content-security";
 
 export type ArticleStatus = "published" | "draft";
 
@@ -18,6 +19,7 @@ export type Article = {
   readMinutes: number;
   status: ArticleStatus;
   indexable: boolean;
+  renderedHtml?: string;
 };
 
 const defaultDraftSections: ArticleSection[] = [];
@@ -213,8 +215,59 @@ export const articles: Article[] = [
 
 export const publishedArticles = articles.filter((article) => article.status === "published" && article.indexable);
 
-function articleFromCms(row: Record<string, unknown>): Article {
-  const body = String(row.body_html || "").replace(/<[^>]*>/g, "").trim();
+function escapeHtml(input: unknown) {
+  return String(input || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function stripHtml(input: string) {
+  return input.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function parseJsonArray(value: unknown) {
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value || "[]") : value;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function renderArticleContentBlocksToHtml(value: unknown) {
+  const blocks = parseJsonArray(value);
+  const html = blocks
+    .map((block) => {
+      if (!block || typeof block !== "object") return "";
+      const item = block as Record<string, unknown>;
+      const type = String(item.type || "");
+      if (type === "paragraph") return `<p>${escapeHtml(item.text)}</p>`;
+      if (type === "heading") {
+        const level = [2, 3, 4].includes(Number(item.level)) ? Number(item.level) : 2;
+        return `<h${level}>${escapeHtml(item.text)}</h${level}>`;
+      }
+      if (type === "quote") return `<blockquote><p>${escapeHtml(item.text)}</p>${item.cite ? `<figcaption>${escapeHtml(item.cite)}</figcaption>` : ""}</blockquote>`;
+      if (type === "cta") return `<p><a class="cms-cta" href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a></p>`;
+      if (type === "product_card") return `<p class="cms-product-card">关联商品：${escapeHtml(item.product_id)}</p>`;
+      if (type === "table" && Array.isArray(item.rows)) {
+        const rows = item.rows
+          .filter((row) => Array.isArray(row))
+          .map((row) => `<tr>${(row as unknown[]).map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`)
+          .join("");
+        return rows ? `<table><tbody>${rows}</tbody></table>` : "";
+      }
+      return "";
+    })
+    .join("");
+  return sanitizeHtml(html);
+}
+
+export function articleFromCms(row: Record<string, unknown>): Article {
+  const renderedHtml = sanitizeHtml(row.body_html || "") || renderArticleContentBlocksToHtml(row.content_blocks_json);
+  const body = stripHtml(renderedHtml);
   const keywords = (() => {
     try {
       const parsed = JSON.parse(String(row.keywords_json || "[]"));
@@ -234,7 +287,8 @@ function articleFromCms(row: Record<string, unknown>): Article {
     sections: body ? [{ heading: "正文", body: [body] }] : [],
     readMinutes: Math.max(1, Math.ceil(body.length / 500)),
     status: "published",
-    indexable: row.indexable !== 0
+    indexable: row.indexable !== 0,
+    renderedHtml
   };
 }
 
