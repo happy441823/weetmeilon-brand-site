@@ -1,6 +1,6 @@
 import { getCmsDb } from "./env";
 import { getResourceConfig, type CmsField } from "./schema";
-import { assertSafeUrl, normalizeJsonText, slugify } from "./validation";
+import { assertSafeUrl, markdownSourceToHtml, normalizeCmsFieldValue, normalizeJsonText, slugify } from "./validation";
 
 type QueryOptions = {
   q?: string;
@@ -33,7 +33,10 @@ function normalizeFieldValue(field: CmsField, value: unknown) {
     return Number.isFinite(numberValue) ? numberValue : 0;
   }
   if (field.type === "json") {
-    return normalizeJsonText(value, field.name.endsWith("_json") ? "[]" : "{}");
+    return normalizeCmsFieldValue(field.name, value, field.name.endsWith("_json") ? "[]" : "{}");
+  }
+  if (field.name === "body_html") {
+    return normalizeCmsFieldValue(field.name, value, "");
   }
   if (field.name === "slug") {
     return slugify(String(value || ""));
@@ -67,6 +70,9 @@ function preparePayload(resource: string, input: Record<string, unknown>) {
   }
   if ("title" in payload && !("slug" in payload) && config.fields.some((field) => field.name === "slug")) {
     payload.slug = slugify(String(payload.title));
+  }
+  if ("markdown_source" in payload && !("body_html" in payload) && config.fields.some((field) => field.name === "body_html")) {
+    payload.body_html = markdownSourceToHtml(payload.markdown_source);
   }
 
   return payload;

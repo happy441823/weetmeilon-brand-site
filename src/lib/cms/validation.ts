@@ -1,4 +1,5 @@
 import { articleStatusOptions, productStatusOptions } from "./schema";
+import { markdownToSafeHtml, normalizeCmsJsonField, sanitizeHtml } from "./content-security";
 
 const blockedProtocols = /^(javascript|data):/i;
 
@@ -32,14 +33,24 @@ export function assertSafeUrl(value: string, label = "链接") {
 }
 
 export function normalizeJsonText(value: unknown, fallback: string) {
-  if (value == null || value === "") {
-    return fallback;
+  return normalizeCmsJsonField("", value, fallback);
+}
+
+export function normalizeCmsFieldValue(name: string, value: unknown, fallback: string) {
+  if (name.endsWith("_json")) {
+    return normalizeCmsJsonField(name, value, fallback);
   }
-  if (typeof value !== "string") {
-    return JSON.stringify(value);
+  if (name === "body_html") {
+    return sanitizeHtml(value);
   }
-  JSON.parse(value);
+  if (name === "markdown_source") {
+    return String(value || "");
+  }
   return value;
+}
+
+export function markdownSourceToHtml(value: unknown) {
+  return markdownToSafeHtml(value);
 }
 
 export function validateSeo(input: { seo_title?: string | null; seo_description?: string | null }) {
@@ -84,4 +95,3 @@ export function validateProductPublish(input: { name?: string | null; slug?: str
 export function isValidArticleStatus(status: string) {
   return articleStatusOptions.some((option) => option.value === status);
 }
-
