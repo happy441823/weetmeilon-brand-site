@@ -1,4 +1,5 @@
 import { getCmsDb } from "./env";
+import { cmsBackupTables } from "./backup";
 import { getResourceConfig, type CmsField } from "./schema";
 import { assertSafeUrl, markdownSourceToHtml, normalizeCmsFieldValue, normalizeJsonText, slugify } from "./validation";
 
@@ -303,30 +304,19 @@ export async function exportBackup() {
   if (!db) {
     throw new Error("CMS_DB 未绑定。");
   }
-  const resources = Object.keys({
-    products: true,
-    articles: true,
-    pages: true,
-    faqs: true,
-    media_assets: true,
-    navigation_items: true,
-    footer_groups: true,
-    footer_items: true,
-    site_settings: true,
-    redirects: true
-  });
-
-  const data: Record<string, unknown[]> = {};
-  for (const resource of resources) {
-    const config = getResourceConfig(resource);
-    if (!config) continue;
-    const rows = await db.prepare(`SELECT * FROM ${quote(config.table)}`).all<Record<string, unknown>>();
-    data[resource] = rows.results;
+  const tables: Record<string, unknown[]> = {};
+  for (const table of cmsBackupTables) {
+    const rows = await db.prepare(`SELECT * FROM ${quote(table)}`).all<Record<string, unknown>>();
+    tables[table] = rows.results;
   }
   return {
+    version: 1,
     exportedAt: new Date().toISOString(),
     source: "sweetmeilon-cms",
-    data
+    mode: "full-business-backup",
+    includesR2Objects: false,
+    r2BackupRequired: true,
+    tables
   };
 }
 
