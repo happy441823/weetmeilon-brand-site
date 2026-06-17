@@ -68,6 +68,8 @@ async function main() {
 
     await expectNoindex("/admin");
     await expectNoindex("/admin/products");
+    await expectNoindex("/admin/products/new");
+    await expectNoindex("/admin/products/smoke-product-id");
     await expectNoindex("/admin/articles");
     await expectNoindex("/admin/pages");
     await expectNoindex("/admin/homepage");

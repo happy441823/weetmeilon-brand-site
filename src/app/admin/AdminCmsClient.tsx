@@ -95,7 +95,7 @@ function readError(error: unknown) {
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
 }
 
-export function AdminCmsClient({ initialResource = "dashboard" }: { initialResource?: string } = {}) {
+export function AdminCmsClient({ initialResource = "dashboard", initialItemId = "" }: { initialResource?: string; initialItemId?: string } = {}) {
   const [schema, setSchema] = useState<SchemaResponse | null>(null);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [resource, setResource] = useState(initialResource);
@@ -134,6 +134,23 @@ export function AdminCmsClient({ initialResource = "dashboard" }: { initialResou
     setForm(Object.fromEntries((nextConfig?.fields || []).map((field) => [field.name, emptyValue(field)])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schema, resource]);
+
+  useEffect(() => {
+    if (!schema || !initialItemId || resource === "dashboard" || resource === "backup") return;
+    const activeConfig = schema.resources[resource];
+    if (!activeConfig) return;
+    async function loadInitialItem() {
+      const response = await fetch(`/api/admin/resource/${resource}/${encodeURIComponent(initialItemId)}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || "无法读取指定内容。");
+        return;
+      }
+      editRow(data.item);
+    }
+    void loadInitialItem();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schema, initialItemId, resource]);
 
   async function loadRows(target = resource) {
     const params = new URLSearchParams();
@@ -400,7 +417,9 @@ export function AdminCmsClient({ initialResource = "dashboard" }: { initialResou
                   <h3 className="text-lg font-black">{selected ? "编辑内容" : `新增${config.label}`}</h3>
                   <button type="button" onClick={resetForm} className="rounded-full border border-white/12 px-3 py-1 text-xs font-bold text-white/70 hover:bg-white/8">清空</button>
                 </div>
-                {resource === "articles" ? (
+                {resource === "products" ? (
+                  <ProductEditorPanel form={form} fields={config.fields} setField={setField} />
+                ) : resource === "articles" ? (
                   <ArticleEditorPanel form={form} fields={config.fields} setField={setField} />
                 ) : resource === "pages" || resource === "homepage_sections" ? (
                   <ModuleEditorPanel resource={resource} form={form} fields={config.fields} setField={setField} />
@@ -473,6 +492,141 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
 
 function fieldByName(fields: Field[], name: string) {
   return fields.find((field) => field.name === name);
+}
+
+function ProductEditorPanel({
+  form,
+  fields,
+  setField
+}: {
+  form: Record<string, unknown>;
+  fields: Field[];
+  setField: (name: string, value: unknown) => void;
+}) {
+  const [preview, setPreview] = useState<"desktop" | "mobile">("desktop");
+  const [contentMode, setContentMode] = useState<"copy" | "media" | "seo">("copy");
+
+  useEffect(() => {
+    const key = `sweetmeilon_product_draft_${String(form.slug || "new")}`;
+    window.localStorage.setItem(key, JSON.stringify(form));
+  }, [form]);
+
+  useEffect(() => {
+    function warn(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, []);
+
+  function renderField(name: string) {
+    const field = fieldByName(fields, name);
+    if (!field) return null;
+    return (
+      <label key={name} className="grid gap-1.5">
+        <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
+        <FieldControl field={field} value={form[name]} onChange={(value) => setField(name, value)} />
+      </label>
+    );
+  }
+
+  function renderGroup(names: string[], columns = "md:grid-cols-2") {
+    return <div className={`grid gap-3 ${columns}`}>{names.map((name) => renderField(name))}</div>;
+  }
+
+  const title = String(form.name || "未命名商品");
+  const summary = String(form.summary || form.subtitle || "商品摘要会显示在产品中心和详情页。");
+  const slug = String(form.slug || "");
+  const publicPath = slug ? `/products/${slug}` : "/products";
+
+  return (
+    <div className="grid gap-4">
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">Product Editor</p>
+          <a href={publicPath} target="_blank" className="rounded-full border border-white/12 px-3 py-1 text-xs font-black text-white/70 hover:bg-white/8">
+            官网预览
+          </a>
+        </div>
+        {renderGroup(["name", "short_name"])}
+        {renderGroup(["slug", "subtitle"])}
+        {renderGroup(["primary_category_id", "subcategory_id", "series_id"], "md:grid-cols-3")}
+        {renderGroup(["status", "sort_order"], "md:grid-cols-2")}
+        {renderField("summary")}
+      </section>
+
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <div className="flex flex-wrap gap-2">
+          {[
+            ["copy", "内容"],
+            ["media", "图片"],
+            ["seo", "SEO"]
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setContentMode(value as "copy" | "media" | "seo")}
+              className={`rounded-full px-3 py-1 text-xs font-black ${contentMode === value ? "bg-mint-300 text-[#12031d]" : "border border-white/12 text-white/68"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {contentMode === "copy" ? (
+          <div className="grid gap-3">
+            {renderField("body_html")}
+            {renderGroup(["highlights_json", "concerns_json"], "md:grid-cols-2")}
+            {renderGroup(["material_notes", "specifications_json"], "md:grid-cols-2")}
+            {renderGroup(["package_list", "care_notes"], "md:grid-cols-2")}
+            {renderGroup(["storage_notes", "privacy_notes"], "md:grid-cols-2")}
+            {renderGroup(["usage_tips", "compliance_notes"], "md:grid-cols-2")}
+          </div>
+        ) : null}
+
+        {contentMode === "media" ? (
+          <div className="grid gap-3">
+            {renderGroup(["cover_media_id", "hero_media_id", "og_media_id"], "md:grid-cols-3")}
+            {renderField("gallery_json")}
+            {renderField("image_alt")}
+          </div>
+        ) : null}
+
+        {contentMode === "seo" ? (
+          <div className="grid gap-3">
+            {renderGroup(["tmall_url", "jd_url"], "md:grid-cols-2")}
+            {renderGroup(["tmall_enabled", "jd_enabled", "links_verified"], "md:grid-cols-3")}
+            {renderGroup(["buy_button_enabled", "featured", "visible_home", "visible_catalog"], "md:grid-cols-4")}
+            {renderField("seo_title")}
+            {renderField("seo_description")}
+            {renderGroup(["canonical_url", "indexable"], "md:grid-cols-2")}
+            {renderField("scheduled_at")}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">Preview</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPreview("desktop")} className={`rounded-full px-3 py-1 text-xs font-black ${preview === "desktop" ? "bg-white text-[#12031d]" : "border border-white/12 text-white/68"}`}>桌面</button>
+            <button type="button" onClick={() => setPreview("mobile")} className={`rounded-full px-3 py-1 text-xs font-black ${preview === "mobile" ? "bg-white text-[#12031d]" : "border border-white/12 text-white/68"}`}>手机</button>
+          </div>
+        </div>
+        <article className={`rounded-xl border border-white/10 bg-[#100019] p-4 ${preview === "mobile" ? "max-w-[320px]" : ""}`}>
+          <p className="text-xs font-black text-mint-300">{String(form.primary_category_id || "产品")}</p>
+          <h4 className="mt-2 text-xl font-black text-white">{title}</h4>
+          <p className="mt-2 text-sm leading-6 text-white/60">{summary}</p>
+          <div className="mt-4 grid gap-2 text-xs text-white/52">
+            <p>状态：{String(form.status || "draft")}</p>
+            <p>天猫：{form.tmall_enabled ? "启用" : "关闭"} / 京东：{form.jd_enabled ? "启用" : "关闭"}</p>
+            <p>购买按钮：{form.buy_button_enabled ? "显示" : "隐藏"}</p>
+          </div>
+        </article>
+      </section>
+    </div>
+  );
 }
 
 function ArticleEditorPanel({

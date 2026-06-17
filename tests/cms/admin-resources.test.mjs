@@ -32,6 +32,35 @@ test("publish jobs are not exposed as a writable navigation resource", () => {
   assert.deepEqual(jobs.listColumns, ["entity_type", "entity_id", "status", "run_at"]);
 });
 
+test("product resource exposes dedicated CMS fields and scheduled workflow status", () => {
+  const products = getResourceConfig("products");
+  const fieldNames = products.fields.map((field) => field.name);
+  for (const name of [
+    "primary_category_id",
+    "subcategory_id",
+    "series_id",
+    "sort_order",
+    "highlights_json",
+    "concerns_json",
+    "material_notes",
+    "specifications_json",
+    "package_list",
+    "care_notes",
+    "storage_notes",
+    "privacy_notes",
+    "usage_tips",
+    "compliance_notes",
+    "cover_media_id",
+    "hero_media_id",
+    "og_media_id",
+    "gallery_json"
+  ]) {
+    assert.equal(fieldNames.includes(name), true, `${name} should be editable in product CMS`);
+  }
+  const status = products.fields.find((field) => field.name === "status");
+  assert.equal(status.options.some((option) => option.value === "scheduled"), true);
+});
+
 test("sensitive admin resources require super admin read access", () => {
   assert.deepEqual(readRolesForResource(getResourceConfig("admin_users")), ["super_admin"]);
   assert.deepEqual(readRolesForResource(getResourceConfig("admin_roles")), ["super_admin"]);

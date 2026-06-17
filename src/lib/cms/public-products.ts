@@ -138,7 +138,7 @@ async function loadProductMedia(rows: ProductRow[]) {
   const placeholders = ids.map(() => "?").join(", ");
   const result = await db
     .prepare(
-      `SELECT pi.product_id, pi.image_type, pi.sort_order, pi.alt_text, ma.public_url
+      `SELECT pi.product_id, pi.role AS image_type, pi.sort_order, pi.alt AS alt_text, ma.public_url
        FROM product_images pi
        INNER JOIN media_assets ma ON ma.id = pi.media_id
        WHERE pi.product_id IN (${placeholders})
