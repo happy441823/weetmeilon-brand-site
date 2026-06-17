@@ -95,10 +95,10 @@ function readError(error: unknown) {
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
 }
 
-export function AdminCmsClient() {
+export function AdminCmsClient({ initialResource = "dashboard" }: { initialResource?: string } = {}) {
   const [schema, setSchema] = useState<SchemaResponse | null>(null);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
-  const [resource, setResource] = useState("dashboard");
+  const [resource, setResource] = useState(initialResource);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
