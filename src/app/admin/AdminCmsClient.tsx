@@ -400,14 +400,18 @@ export function AdminCmsClient({ initialResource = "dashboard" }: { initialResou
                   <h3 className="text-lg font-black">{selected ? "编辑内容" : `新增${config.label}`}</h3>
                   <button type="button" onClick={resetForm} className="rounded-full border border-white/12 px-3 py-1 text-xs font-bold text-white/70 hover:bg-white/8">清空</button>
                 </div>
-                <div className="grid gap-3">
-                  {config.fields.map((field) => (
-                    <label key={field.name} className="grid gap-1.5">
-                      <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
-                      <FieldControl field={field} value={form[field.name]} onChange={(value) => setField(field.name, value)} />
-                    </label>
-                  ))}
-                </div>
+                {resource === "articles" ? (
+                  <ArticleEditorPanel form={form} fields={config.fields} setField={setField} />
+                ) : (
+                  <div className="grid gap-3">
+                    {config.fields.map((field) => (
+                      <label key={field.name} className="grid gap-1.5">
+                        <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
+                        <FieldControl field={field} value={form[field.name]} onChange={(value) => setField(field.name, value)} />
+                      </label>
+                    ))}
+                  </div>
+                )}
                 <div className="mt-5 grid gap-2">
                   <button type="button" disabled={isPending} onClick={save} className="h-11 rounded-lg bg-mint-gradient px-4 text-sm font-black text-[#12031d] disabled:opacity-60">保存</button>
                   {selected && resource === "admin_users" ? (
@@ -463,6 +467,134 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
     );
   }
   return <input value={String(value ?? "")} onChange={(event) => onChange(field.type === "number" ? Number(event.target.value) : event.target.value)} type={field.type === "datetime" ? "datetime-local" : field.type === "number" ? "number" : "text"} className={`${base} h-10`} />;
+}
+
+function fieldByName(fields: Field[], name: string) {
+  return fields.find((field) => field.name === name);
+}
+
+function ArticleEditorPanel({
+  form,
+  fields,
+  setField
+}: {
+  form: Record<string, unknown>;
+  fields: Field[];
+  setField: (name: string, value: unknown) => void;
+}) {
+  const [mode, setMode] = useState<"rich" | "markdown" | "blocks">("rich");
+  const [preview, setPreview] = useState<"desktop" | "mobile">("desktop");
+  const baseField = "rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none focus:border-mint-300/60";
+
+  useEffect(() => {
+    const key = `sweetmeilon_article_draft_${String(form.slug || "new")}`;
+    window.localStorage.setItem(key, JSON.stringify(form));
+  }, [form]);
+
+  useEffect(() => {
+    function warn(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, []);
+
+  const contentField = mode === "rich" ? "body_html" : mode === "markdown" ? "markdown_source" : "content_blocks_json";
+  const contentLabel = mode === "rich" ? "富文本 HTML" : mode === "markdown" ? "Markdown 源码" : "结构化内容块 JSON";
+
+  function renderSmallField(name: string) {
+    const field = fieldByName(fields, name);
+    if (!field) return null;
+    return (
+      <label key={name} className="grid gap-1.5">
+        <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
+        <FieldControl field={field} value={form[name]} onChange={(value) => setField(name, value)} />
+      </label>
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">Article Editor</p>
+        {renderSmallField("title")}
+        {renderSmallField("subtitle")}
+        <div className="grid gap-3 md:grid-cols-2">
+          {renderSmallField("slug")}
+          {renderSmallField("author")}
+        </div>
+        {renderSmallField("excerpt")}
+        <div className="grid gap-3 md:grid-cols-2">
+          {renderSmallField("category_id")}
+          {renderSmallField("cover_media_id")}
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {renderSmallField("featured")}
+          {renderSmallField("pinned")}
+        </div>
+      </section>
+
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <div className="flex flex-wrap gap-2">
+          {[
+            ["rich", "富文本"],
+            ["markdown", "Markdown"],
+            ["blocks", "内容块"]
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMode(value as "rich" | "markdown" | "blocks")}
+              className={`rounded-full px-3 py-1 text-xs font-black ${mode === value ? "bg-mint-300 text-[#12031d]" : "border border-white/12 text-white/68"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <label className="grid gap-1.5">
+          <span className="text-xs font-black text-white/58">{contentLabel}</span>
+          <textarea
+            value={String(form[contentField] ?? "")}
+            onChange={(event) => setField(contentField, event.target.value)}
+            rows={mode === "blocks" ? 10 : 12}
+            className={`${baseField} py-2 leading-6`}
+          />
+        </label>
+      </section>
+
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">SEO</p>
+        {renderSmallField("seo_title")}
+        {renderSmallField("seo_description")}
+        {renderSmallField("canonical_url")}
+        <div className="grid gap-3 md:grid-cols-2">
+          {renderSmallField("og_media_id")}
+          {renderSmallField("keywords_json")}
+        </div>
+        {renderSmallField("indexable")}
+        {renderSmallField("scheduled_at")}
+      </section>
+
+      <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">Preview</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPreview("desktop")} className={`rounded-full px-3 py-1 text-xs font-black ${preview === "desktop" ? "bg-white text-[#12031d]" : "border border-white/12 text-white/68"}`}>桌面</button>
+            <button type="button" onClick={() => setPreview("mobile")} className={`rounded-full px-3 py-1 text-xs font-black ${preview === "mobile" ? "bg-white text-[#12031d]" : "border border-white/12 text-white/68"}`}>手机</button>
+          </div>
+        </div>
+        <article className={`rounded-xl border border-white/10 bg-[#100019] p-4 ${preview === "mobile" ? "max-w-[320px]" : ""}`}>
+          <p className="text-xs font-black text-mint-300">{String(form.category_id || "文章")}</p>
+          <h4 className="mt-2 text-xl font-black text-white">{String(form.title || "未命名文章")}</h4>
+          <p className="mt-2 text-sm leading-6 text-white/60">{String(form.excerpt || "摘要会显示在文章列表和分享描述中。")}</p>
+          <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.04] p-3 text-xs leading-6 text-white/58">
+            {String(form.body_html || form.markdown_source || form.content_blocks_json || "正文预览将在公开文章页保留标题、段落、列表、引用、表格、图片、链接和 CTA。").slice(0, 420)}
+          </div>
+        </article>
+      </section>
+    </div>
+  );
 }
 
 function AdminRolesPanel({

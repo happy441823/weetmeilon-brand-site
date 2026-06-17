@@ -191,7 +191,9 @@ export const cmsResources = {
       { name: "subtitle", label: "副标题", type: "text" },
       { name: "slug", label: "Slug", type: "text", required: true },
       { name: "excerpt", label: "摘要", type: "textarea" },
+      { name: "cover_media_id", label: "封面素材 ID", type: "text" },
       { name: "author", label: "作者", type: "text" },
+      { name: "category_id", label: "文章分类 ID", type: "text" },
       { name: "status", label: "状态", type: "select", options: articleStatusOptions },
       { name: "featured", label: "推荐", type: "boolean" },
       { name: "pinned", label: "置顶", type: "boolean" },
@@ -200,6 +202,8 @@ export const cmsResources = {
       { name: "content_blocks_json", label: "内容块 JSON", type: "json" },
       { name: "seo_title", label: "SEO 标题", type: "text" },
       { name: "seo_description", label: "SEO 描述", type: "textarea" },
+      { name: "canonical_url", label: "Canonical URL", type: "text" },
+      { name: "og_media_id", label: "OG 素材 ID", type: "text" },
       { name: "keywords_json", label: "关键词 JSON", type: "json" },
       { name: "indexable", label: "允许索引", type: "boolean" },
       { name: "scheduled_at", label: "定时发布时间", type: "datetime" }
