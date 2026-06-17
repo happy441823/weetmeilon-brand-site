@@ -30,6 +30,12 @@ type DashboardResponse = {
   recent: Record<string, unknown>[];
 };
 
+type AdminRoleState = {
+  roles: string[];
+  assignableRoles: string[];
+  user?: Record<string, unknown>;
+};
+
 const preferredResources = [
   "products",
   "articles",
@@ -98,6 +104,7 @@ export function AdminCmsClient() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const [message, setMessage] = useState("");
+  const [adminRoleState, setAdminRoleState] = useState<AdminRoleState | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const config = resource !== "dashboard" && resource !== "backup" ? schema?.resources[resource] : null;
@@ -147,6 +154,7 @@ export function AdminCmsClient() {
   function resetForm() {
     if (!config) return;
     setSelected(null);
+    setAdminRoleState(null);
     setForm(Object.fromEntries(config.fields.map((field) => [field.name, emptyValue(field)])));
   }
 
@@ -154,6 +162,11 @@ export function AdminCmsClient() {
     setSelected(row);
     if (!config) return;
     setForm(Object.fromEntries(config.fields.map((field) => [field.name, row[field.name] ?? emptyValue(field)])));
+    if (resource === "admin_users") {
+      void loadAdminRoles(row, config);
+    } else {
+      setAdminRoleState(null);
+    }
   }
 
   function setField(name: string, value: unknown) {
@@ -223,6 +236,56 @@ export function AdminCmsClient() {
         setMessage(readError(error));
       }
     });
+  }
+
+  async function loadAdminRoles(row = selected, activeConfig = config) {
+    if (!row || !activeConfig) return;
+    const id = resourceItemKey(row, activeConfig);
+    const response = await fetch(`/api/admin/admin-users/${encodeURIComponent(id)}/roles`, { cache: "no-store" });
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error || "读取管理员角色失败。");
+      return;
+    }
+    setAdminRoleState(data);
+  }
+
+  async function mutateAdminRole(role: string, method: "POST" | "DELETE") {
+    if (!selected || !config) return;
+    const id = resourceItemKey(selected, config);
+    const url =
+      method === "POST"
+        ? `/api/admin/admin-users/${encodeURIComponent(id)}/roles`
+        : `/api/admin/admin-users/${encodeURIComponent(id)}/roles?role=${encodeURIComponent(role)}`;
+    const response = await fetch(url, {
+      method,
+      headers: { "content-type": "application/json" },
+      body: method === "POST" ? JSON.stringify({ role }) : undefined
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error || "管理员角色操作失败。");
+      return;
+    }
+    setAdminRoleState(data);
+    await loadRows();
+  }
+
+  async function setAdminActive(isActive: boolean) {
+    if (!selected || !config) return;
+    const id = resourceItemKey(selected, config);
+    const response = await fetch(`/api/admin/admin-users/${encodeURIComponent(id)}/status`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ is_active: isActive })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error || "管理员状态操作失败。");
+      return;
+    }
+    setAdminRoleState(data);
+    await loadRows();
   }
 
   const statusOptions = useMemo(() => config?.fields.find((field) => field.name === "status")?.options || [], [config]);
@@ -338,6 +401,14 @@ export function AdminCmsClient() {
                 </div>
                 <div className="mt-5 grid gap-2">
                   <button type="button" disabled={isPending} onClick={save} className="h-11 rounded-lg bg-mint-gradient px-4 text-sm font-black text-[#12031d] disabled:opacity-60">保存</button>
+                  {selected && resource === "admin_users" ? (
+                    <AdminRolesPanel
+                      state={adminRoleState}
+                      onAssign={(role) => void mutateAdminRole(role, "POST")}
+                      onRemove={(role) => void mutateAdminRole(role, "DELETE")}
+                      onSetActive={(isActive) => void setAdminActive(isActive)}
+                    />
+                  ) : null}
                   {selected && ["products", "articles", "pages"].includes(resource) ? (
                     <div className="grid grid-cols-3 gap-2">
                       <button type="button" onClick={() => workflow("submit_review")} className="rounded-lg border border-white/12 px-2 py-2 text-xs font-bold">提交审核</button>
@@ -378,6 +449,50 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
     );
   }
   return <input value={String(value ?? "")} onChange={(event) => onChange(field.type === "number" ? Number(event.target.value) : event.target.value)} type={field.type === "datetime" ? "datetime-local" : field.type === "number" ? "number" : "text"} className={`${base} h-10`} />;
+}
+
+function AdminRolesPanel({
+  state,
+  onAssign,
+  onRemove,
+  onSetActive
+}: {
+  state: AdminRoleState | null;
+  onAssign: (role: string) => void;
+  onRemove: (role: string) => void;
+  onSetActive: (isActive: boolean) => void;
+}) {
+  if (!state) {
+    return <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3 text-xs text-white/56">正在读取管理员角色...</div>;
+  }
+  const roles = new Set(state.roles);
+  const isActive = Number(state.user?.is_active ?? 1) === 1;
+  return (
+    <section className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
+      <div>
+        <p className="text-xs font-black text-white/58">管理员角色</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {state.assignableRoles.map((role) => (
+            <button
+              key={role}
+              type="button"
+              onClick={() => (roles.has(role) ? onRemove(role) : onAssign(role))}
+              className={`rounded-full px-3 py-1 text-xs font-black ${roles.has(role) ? "bg-mint-300 text-[#12031d]" : "border border-white/12 text-white/68"}`}
+            >
+              {roles.has(role) ? `移除 ${role}` : `分配 ${role}`}
+            </button>
+          ))}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onSetActive(!isActive)}
+        className="rounded-lg border border-white/12 px-3 py-2 text-xs font-black text-white/75 hover:bg-white/8"
+      >
+        {isActive ? "禁用管理员" : "恢复管理员"}
+      </button>
+    </section>
+  );
 }
 
 function DashboardView({ dashboard }: { dashboard: DashboardResponse | null }) {
