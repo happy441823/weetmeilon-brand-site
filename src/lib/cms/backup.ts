@@ -44,15 +44,20 @@ export type CmsBackupPackage = {
   tables: Record<string, unknown[]>;
 };
 
+type D1BoundStatementLike = {
+  run(): Promise<unknown>;
+  first<T = Record<string, unknown>>(): Promise<T | null>;
+};
+
+type D1PreparedStatementLike = {
+  bind(...values: unknown[]): D1BoundStatementLike;
+  run(): Promise<unknown>;
+  first<T = Record<string, unknown>>(): Promise<T | null>;
+};
+
 type D1DatabaseLike = {
-  prepare(sql: string): {
-    bind(...values: unknown[]): {
-      run(): Promise<unknown>;
-      first<T = Record<string, unknown>>(): Promise<T | null>;
-    };
-    run(): Promise<unknown>;
-    first<T = Record<string, unknown>>(): Promise<T | null>;
-  };
+  prepare(sql: string): D1PreparedStatementLike;
+  batch?(statements: Array<D1PreparedStatementLike | D1BoundStatementLike>): Promise<unknown[]>;
 };
 
 type RestoreOptions = {
@@ -69,6 +74,14 @@ function quote(name: string) {
 
 function isPlainRow(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function assertSafeColumnNames(table: CmsBackupTable, columns: string[]) {
+  for (const column of columns) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(column)) {
+      throw new Error(`备份表 ${table} 包含非法字段名：${column}`);
+    }
+  }
 }
 
 function assertRestoreAllowed(options: RestoreOptions = {}) {
@@ -161,6 +174,7 @@ async function insertRows(db: D1DatabaseLike, table: CmsBackupTable, rows: unkno
       skipped += 1;
       continue;
     }
+    assertSafeColumnNames(table, columns);
     await db
       .prepare(`INSERT INTO ${quote(table)} (${columns.map(quote).join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`)
       .bind(...columns.map((column) => row[column]))
@@ -170,24 +184,73 @@ async function insertRows(db: D1DatabaseLike, table: CmsBackupTable, rows: unkno
   return { inserted, skipped };
 }
 
+function buildInsertStatement(db: D1DatabaseLike, table: CmsBackupTable, row: unknown) {
+  if (!isPlainRow(row)) {
+    return null;
+  }
+  const columns = Object.keys(row);
+  if (columns.length === 0) {
+    return null;
+  }
+  assertSafeColumnNames(table, columns);
+  return db
+    .prepare(`INSERT INTO ${quote(table)} (${columns.map(quote).join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`)
+    .bind(...columns.map((column) => row[column]));
+}
+
+function validateRestorableRows(backup: CmsBackupPackage) {
+  for (const table of cmsBackupTables) {
+    for (const row of backup.tables[table]) {
+      if (!isPlainRow(row)) continue;
+      const columns = Object.keys(row);
+      if (columns.length === 0) continue;
+      assertSafeColumnNames(table, columns);
+    }
+  }
+}
+
 export async function restoreBackupPackage(db: D1DatabaseLike, input: unknown, options: RestoreOptions = {}) {
   assertRestoreAllowed(options);
   const backup = validateBackupPackage(input);
+  validateRestorableRows(backup);
   const startedAt = new Date().toISOString();
   const plan = await buildRestorePlan(db, backup);
   const deleted: Record<string, number> = {};
   const inserted: Record<string, number> = {};
   let skipped = 0;
+  let executionMode: "d1_batch" | "sequential_fallback" = "sequential_fallback";
 
-  for (const table of [...cmsBackupTables].reverse()) {
-    await db.prepare(`DELETE FROM ${quote(table)}`).run();
-    deleted[table] = plan.currentCounts[table] || 0;
-  }
+  if (db.batch) {
+    const statements: Array<D1PreparedStatementLike | D1BoundStatementLike> = [];
+    for (const table of [...cmsBackupTables].reverse()) {
+      statements.push(db.prepare(`DELETE FROM ${quote(table)}`));
+      deleted[table] = plan.currentCounts[table] || 0;
+    }
+    for (const table of cmsBackupTables) {
+      inserted[table] = 0;
+      for (const row of backup.tables[table]) {
+        const statement = buildInsertStatement(db, table, row);
+        if (!statement) {
+          skipped += 1;
+          continue;
+        }
+        statements.push(statement);
+        inserted[table] += 1;
+      }
+    }
+    await db.batch(statements);
+    executionMode = "d1_batch";
+  } else {
+    for (const table of [...cmsBackupTables].reverse()) {
+      await db.prepare(`DELETE FROM ${quote(table)}`).run();
+      deleted[table] = plan.currentCounts[table] || 0;
+    }
 
-  for (const table of cmsBackupTables) {
-    const result = await insertRows(db, table, backup.tables[table]);
-    inserted[table] = result.inserted;
-    skipped += result.skipped;
+    for (const table of cmsBackupTables) {
+      const result = await insertRows(db, table, backup.tables[table]);
+      inserted[table] = result.inserted;
+      skipped += result.skipped;
+    }
   }
 
   return {
@@ -197,6 +260,7 @@ export async function restoreBackupPackage(db: D1DatabaseLike, input: unknown, o
     deleted,
     inserted,
     skipped,
+    executionMode,
     r2BackupRequired: backup.r2BackupRequired,
     r2ObjectKeys: listR2ObjectsInBackup(backup),
     rollbackPoint: {

@@ -125,8 +125,45 @@ test("restore clears all CMS tables and inserts backup rows after confirmation",
   assert.equal(result.inserted.admin_roles, 1);
   assert.equal(result.inserted.products, 1);
   assert.equal(result.skipped, 0);
+  assert.equal(result.executionMode, "sequential_fallback");
   assert.equal(db.calls.filter((call) => call.sql.startsWith("DELETE FROM")).length, cmsBackupTables.length);
   assert.equal(db.calls.some((call) => call.sql.includes('INSERT INTO "products"')), true);
+});
+
+test("restore uses D1 batch when available", async () => {
+  const backup = fullBackup();
+  backup.tables.products.push({ id: "p1", slug: "demo" });
+  const db = mockD1({ products: 2 });
+  db.batchCalls = [];
+  db.batch = async (statements) => {
+    db.batchCalls.push(statements);
+    return statements.map(() => ({ success: true }));
+  };
+  const result = await restoreBackupPackage(db, backup, { confirm: cmsRestoreConfirmationToken, environment: "preview" });
+  assert.equal(result.executionMode, "d1_batch");
+  assert.equal(result.deleted.products, 2);
+  assert.equal(result.inserted.products, 1);
+  assert.equal(db.batchCalls.length, 1);
+  assert.equal(db.calls.some((call) => call.type === "run"), false);
+});
+
+test("restore batch failure is surfaced before sequential writes run", async () => {
+  const backup = fullBackup();
+  backup.tables.products.push({ id: "p1", slug: "demo" });
+  const db = mockD1();
+  db.batch = async () => {
+    throw new Error("batch failed");
+  };
+  await assert.rejects(() => restoreBackupPackage(db, backup, { confirm: cmsRestoreConfirmationToken, environment: "preview" }), /batch failed/);
+  assert.equal(db.calls.some((call) => call.type === "run"), false);
+});
+
+test("restore rejects unsafe backup column names before writing", async () => {
+  const backup = fullBackup();
+  backup.tables.products.push({ id: "p1", 'slug") VALUES ("x"); DROP TABLE products; --': "demo" });
+  const db = mockD1();
+  await assert.rejects(() => restoreBackupPackage(db, backup, { confirm: cmsRestoreConfirmationToken, environment: "preview" }), /非法字段名/);
+  assert.equal(db.calls.some((call) => call.type === "run"), false);
 });
 
 test("backup table names match migration tables", () => {
