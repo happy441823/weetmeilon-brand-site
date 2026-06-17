@@ -8,5 +8,5 @@ export async function getPublicFaqs(fallback: PublicFaq[]) {
     .map((row): PublicFaq => [String(row.question || ""), String(row.answer || "")])
     .filter(([question, answer]) => question && answer);
 
-  return rows.length > 0 ? rows : fallback;
+  return result.source === "d1" ? rows : fallback;
 }

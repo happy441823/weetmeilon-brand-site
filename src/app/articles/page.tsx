@@ -5,6 +5,9 @@ import { StoreButtons } from "@/components/StoreButtons";
 import { getPublishedArticles } from "@/lib/articles";
 import { withCanonical } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = withCanonical({
   title: "内容与科普文章",
   description: "蜜女郎科普文章：围绕材质体验、产品选择、隐私购买与日常保养，提供更清楚的购买前参考。"

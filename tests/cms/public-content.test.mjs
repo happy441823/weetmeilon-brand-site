@@ -31,11 +31,11 @@ test("public visibility where clause excludes drafts, pending review, offline, a
 test("public D1 read returns fallback safely when disabled, unbound, or query fails", async () => {
   const old = process.env.CMS_PUBLIC_D1_READS;
   process.env.CMS_PUBLIC_D1_READS = "false";
-  assert.deepEqual(await readPublicCmsRows("articles"), { rows: [], dbReady: false, source: "fallback" });
+  assert.deepEqual(await readPublicCmsRows("articles"), { rows: [], dbReady: false, source: "fallback", fallbackReason: "feature_disabled" });
 
   process.env.CMS_PUBLIC_D1_READS = "true";
   setCmsBindingsForTest(null);
-  assert.deepEqual(await readPublicCmsRows("articles"), { rows: [], dbReady: false, source: "fallback" });
+  assert.deepEqual(await readPublicCmsRows("articles"), { rows: [], dbReady: false, source: "fallback", fallbackReason: "unbound" });
 
   setCmsBindingsForTest({
     CMS_DB: {
@@ -44,7 +44,7 @@ test("public D1 read returns fallback safely when disabled, unbound, or query fa
       }
     }
   });
-  assert.deepEqual(await readPublicCmsRows("articles"), { rows: [], dbReady: false, source: "fallback" });
+  assert.deepEqual(await readPublicCmsRows("articles"), { rows: [], dbReady: false, source: "fallback", fallbackReason: "query_error" });
   setCmsBindingsForTest(null);
   process.env.CMS_PUBLIC_D1_READS = old;
 });
@@ -75,6 +75,35 @@ test("public D1 read binds current time and returns rows", async () => {
   assert.equal(result.rows[0].slug, "published");
   assert.match(calls[0].sql, /FROM "articles"/);
   assert.deepEqual(calls[0].values, ["2026-06-17T00:00:00.000Z", "2026-06-17T00:00:00.000Z"]);
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = old;
+});
+
+test("public D1 reads use sort_order for ordered resources", async () => {
+  const old = process.env.CMS_PUBLIC_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "true";
+  const calls = [];
+  setCmsBindingsForTest({
+    CMS_DB: {
+      prepare(sql) {
+        calls.push(sql);
+        return {
+          bind() {
+            return this;
+          },
+          async all() {
+            return { results: [], success: true, meta: {} };
+          }
+        };
+      }
+    }
+  });
+
+  await readPublicCmsRows("products");
+  await readPublicCmsRows("navigation_items");
+  assert.match(calls[0], /ORDER BY sort_order ASC, updated_at DESC/);
+  assert.match(calls[1], /ORDER BY sort_order ASC, updated_at DESC/);
 
   setCmsBindingsForTest(null);
   process.env.CMS_PUBLIC_D1_READS = old;

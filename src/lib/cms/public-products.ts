@@ -150,25 +150,28 @@ function toSeries(row: SeriesRow): CatalogSeries {
 
 export async function getPublicProductsWithCmsFallback() {
   const result = await readPublicCmsRows<ProductRow>("products");
-  if (result.source !== "d1" || result.rows.length === 0) {
+  if (result.source !== "d1") {
     return getPublicCatalogProducts();
   }
   return result.rows.map(toPublicProduct).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export async function getPublicProductBySlugWithCmsFallback(slug: string) {
-  const products = await getPublicProductsWithCmsFallback();
-  return products.find((product) => product.slug === slug) || getPublicCatalogProductBySlug(slug);
+  const result = await readPublicCmsRows<ProductRow>("products");
+  if (result.source !== "d1") {
+    return getPublicCatalogProductBySlug(slug);
+  }
+  return result.rows.map(toPublicProduct).find((product) => product.slug === slug) || null;
 }
 
 export async function getPublicCategoriesWithCmsFallback() {
   const result = await readPublicCmsRows<CategoryRow>("categories");
-  if (result.source !== "d1" || result.rows.length === 0) return catalogCategories;
+  if (result.source !== "d1") return catalogCategories;
   return result.rows.map(toCategory).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export async function getPublicSeriesWithCmsFallback() {
   const result = await readPublicCmsRows<SeriesRow>("product_series");
-  if (result.source !== "d1" || result.rows.length === 0) return catalogSeries;
+  if (result.source !== "d1") return catalogSeries;
   return result.rows.map(toSeries).sort((a, b) => a.sortOrder - b.sortOrder);
 }

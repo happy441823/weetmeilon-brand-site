@@ -5,6 +5,9 @@ import { TrackView } from "@/components/TrackView";
 import { getPublicFaqs, type PublicFaq } from "@/lib/cms/public-faqs";
 import { withCanonical } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = withCanonical({
   title: "FAQ 常见问题",
   description: "蜜女郎常见问题：材质是否真实、触感是否高级、隐私发货、清洁保养、多款产品怎么选、为什么跳转官方渠道购买。"
