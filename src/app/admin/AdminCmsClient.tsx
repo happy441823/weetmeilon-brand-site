@@ -346,9 +346,11 @@ export function AdminCmsClient() {
           ) : null}
 
           {resource === "dashboard" ? <DashboardView dashboard={dashboard} /> : null}
-          {resource === "backup" ? <BackupView /> : null}
+          {resource === "backup" ? <BackupRestoreView /> : null}
 
           {config ? (
+            <>
+            {resource === "media_assets" ? <MediaUploadPanel onUploaded={() => void loadRows("media_assets")} /> : null}
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
               <section className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
                 <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto_auto]">
@@ -430,6 +432,7 @@ export function AdminCmsClient() {
                 </div>
               </aside>
             </div>
+            </>
           ) : null}
         </section>
       </div>
@@ -555,6 +558,137 @@ function BackupView() {
       <a href="/api/admin/backup" className="mt-5 inline-flex rounded-full bg-mint-gradient px-5 py-3 text-sm font-black text-[#12031d]">
         导出全量备份
       </a>
+    </section>
+  );
+}
+
+function BackupRestoreView() {
+  const [backupText, setBackupText] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [result, setResult] = useState("");
+  const [isBusy, setIsBusy] = useState(false);
+
+  async function readBackupFile(file: File | null) {
+    if (!file) return;
+    setBackupText(await file.text());
+  }
+
+  async function submitRestore(nextConfirm = "") {
+    setResult("");
+    setIsBusy(true);
+    try {
+      const backup = JSON.parse(backupText);
+      const response = await fetch("/api/admin/backup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ backup, confirm: nextConfirm })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "备份处理失败。");
+      setResult(JSON.stringify(data, null, 2));
+    } catch (error) {
+      setResult(readError(error));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  return (
+    <section className="grid gap-4 rounded-xl border border-white/10 bg-white/[0.045] p-5">
+      <div>
+        <h3 className="text-xl font-black">导入导出与备份</h3>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-white/62">
+          备份恢复只用于开发 D1 或 Preview D1。先预览恢复计划，确认表数量、R2 对象清单和覆盖范围后，再输入确认口令执行。
+        </p>
+      </div>
+      <a href="/api/admin/backup" className="inline-flex w-fit rounded-full bg-mint-gradient px-5 py-3 text-sm font-black text-[#12031d]">
+        导出全量备份 JSON
+      </a>
+      <div className="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <label className="grid gap-2 rounded-lg border border-white/10 bg-white/[0.04] p-3 text-sm">
+          <span className="font-black text-white/72">选择备份 JSON</span>
+          <input type="file" accept="application/json,.json" onChange={(event) => void readBackupFile(event.target.files?.[0] || null)} className="text-xs text-white/64" />
+        </label>
+        <textarea
+          value={backupText}
+          onChange={(event) => setBackupText(event.target.value)}
+          rows={8}
+          placeholder="粘贴 sweetmeilon-cms-backup JSON"
+          className="rounded-lg border border-white/12 bg-[#160722] px-3 py-2 text-sm text-white outline-none focus:border-mint-300/60"
+        />
+      </div>
+      <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
+        <input
+          value={confirm}
+          onChange={(event) => setConfirm(event.target.value)}
+          placeholder="恢复确认口令：RESTORE_TO_DEV_D1"
+          className="h-11 rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none focus:border-mint-300/60"
+        />
+        <button type="button" disabled={isBusy || !backupText} onClick={() => void submitRestore()} className="h-11 rounded-lg border border-white/12 px-4 text-sm font-black text-white/76 disabled:opacity-50">
+          预览恢复计划
+        </button>
+        <button type="button" disabled={isBusy || confirm !== "RESTORE_TO_DEV_D1"} onClick={() => void submitRestore(confirm)} className="h-11 rounded-lg border border-red-300/35 px-4 text-sm font-black text-red-100 disabled:opacity-50">
+          恢复到开发 D1
+        </button>
+      </div>
+      {result ? <pre className="max-h-[420px] overflow-auto rounded-lg bg-black/30 p-3 text-xs leading-5 text-white/70">{result}</pre> : null}
+    </section>
+  );
+}
+
+function MediaUploadPanel({ onUploaded }: { onUploaded: () => void }) {
+  const [files, setFiles] = useState<FileList | null>(null);
+  const [group, setGroup] = useState("brand");
+  const [message, setMessage] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+
+  async function upload() {
+    if (!files?.length) return;
+    setMessage("");
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("group", group);
+      Array.from(files).forEach((file) => formData.append("files", file));
+      const response = await fetch("/api/admin/media/upload", { method: "POST", body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "上传失败。");
+      setMessage(`已上传 ${data.assets?.length || 0} 个素材。`);
+      onUploaded();
+    } catch (error) {
+      setMessage(readError(error));
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <section className="mb-6 grid gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4 md:grid-cols-[1fr_180px_auto]">
+      <label className="grid gap-1.5">
+        <span className="text-xs font-black text-white/58">上传图片到开发 R2</span>
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={(event) => setFiles(event.target.files)}
+          className="rounded-lg border border-white/12 bg-[#160722] px-3 py-2 text-sm text-white/70"
+        />
+      </label>
+      <label className="grid gap-1.5">
+        <span className="text-xs font-black text-white/58">素材分组</span>
+        <select value={group} onChange={(event) => setGroup(event.target.value)} className="h-10 rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none">
+          <option value="brand">brand</option>
+          <option value="product">product</option>
+          <option value="article">article</option>
+          <option value="page">page</option>
+        </select>
+      </label>
+      <div className="grid content-end gap-1">
+        <button type="button" disabled={isUploading || !files?.length} onClick={() => void upload()} className="h-10 rounded-lg bg-mint-gradient px-4 text-sm font-black text-[#12031d] disabled:opacity-50">
+          上传素材
+        </button>
+        {message ? <p className="text-xs font-bold text-mint-200">{message}</p> : null}
+      </div>
     </section>
   );
 }
