@@ -1,4 +1,4 @@
-import { getCmsDb } from "./env";
+import { getCmsDb, getCmsMediaBucket } from "./env";
 import { cmsBackupTables } from "./backup";
 import { getResourceConfig, type CmsField } from "./schema";
 import { assertSafeUrl, markdownSourceToHtml, normalizeCmsFieldValue, normalizeJsonText, slugify } from "./validation";
@@ -151,6 +151,7 @@ export async function createResourceItem(resource: string, input: Record<string,
     .run();
 
   await createRevisionIfNeeded(resource, id, "创建内容");
+  await syncMediaUsages(resource, id, payload);
   return getResourceItem(resource, id);
 }
 
@@ -172,6 +173,7 @@ export async function updateResourceItem(resource: string, id: string, input: Re
     .run();
 
   await createRevisionIfNeeded(resource, id, summary);
+  await syncMediaUsages(resource, id, payload);
   return getResourceItem(resource, id);
 }
 
@@ -188,6 +190,11 @@ export async function deleteResourceItem(resource: string, id: string) {
     const usage = await db.prepare("SELECT COUNT(*) AS total FROM media_usages WHERE media_id = ?").bind(id).first<{ total: number }>();
     if ((usage?.total || 0) > 0) {
       throw new Error("该素材仍被页面或内容引用，不能删除。");
+    }
+    const media = await db.prepare("SELECT r2_key FROM media_assets WHERE id = ?").bind(id).first<{ r2_key: string }>();
+    const bucket = getCmsMediaBucket();
+    if (media?.r2_key && bucket) {
+      await bucket.delete(media.r2_key);
     }
   }
 
@@ -285,6 +292,51 @@ export async function createRevisionIfNeeded(resource: string, id: string, summa
     .prepare(`INSERT INTO ${quote(target.table)} (id, ${quote(target.field)}, version, summary, snapshot_json) VALUES (?, ?, ?, ?, ?)`)
     .bind(crypto.randomUUID(), id, version?.next_version || 1, summary, JSON.stringify(current))
     .run();
+}
+
+function collectMediaIds(value: unknown, ids = new Set<string>()) {
+  if (typeof value === "string") {
+    if (/^[0-9a-f-]{20,}$/i.test(value) || /^media[_-]/i.test(value)) {
+      ids.add(value);
+      return ids;
+    }
+    const trimmed = value.trim();
+    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+      try {
+        collectMediaIds(JSON.parse(trimmed), ids);
+      } catch {
+        // Ignore non-JSON strings.
+      }
+    }
+    return ids;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectMediaIds(item, ids);
+    return ids;
+  }
+  if (value && typeof value === "object") {
+    for (const [key, entry] of Object.entries(value)) {
+      if (/media_id$|cover_media_id|hero_media_id|og_media_id/i.test(key) && typeof entry === "string") {
+        ids.add(entry);
+      }
+      collectMediaIds(entry, ids);
+    }
+  }
+  return ids;
+}
+
+export async function syncMediaUsages(resource: string, id: string, payload: Record<string, unknown>) {
+  const db = getCmsDb();
+  if (!db || !["products", "articles", "pages", "homepage_sections", "faqs"].includes(resource)) return;
+  const mediaIds = [...collectMediaIds(payload)].filter(Boolean);
+  await db.prepare("DELETE FROM media_usages WHERE entity_type = ? AND entity_id = ?").bind(resource, id).run();
+  for (const mediaId of mediaIds) {
+    await db
+      .prepare("INSERT OR IGNORE INTO media_usages (id, media_id, entity_type, entity_id, field_name) VALUES (?, ?, ?, ?, ?)")
+      .bind(crypto.randomUUID(), mediaId, resource, id, "auto")
+      .run();
+  }
+  await db.prepare("UPDATE media_assets SET usage_count = (SELECT COUNT(*) FROM media_usages WHERE media_id = media_assets.id)").run();
 }
 
 export async function dashboardStats() {
