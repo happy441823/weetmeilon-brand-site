@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCmsDb } from "./env";
 import { getLocalAdminEmail, highestCmsRole, verifyCloudflareAccessJwt } from "./auth-core";
+import { CmsError } from "./errors";
 import type { CmsRole } from "./schema";
 
 export type AdminContext = {
@@ -20,6 +21,9 @@ export class AdminAuthError extends Error {
 }
 
 export function adminErrorResponse(error: unknown) {
+  if (error instanceof CmsError) {
+    return NextResponse.json({ error: error.message }, { status: error.status });
+  }
   if (error instanceof AdminAuthError) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }
@@ -97,16 +101,21 @@ export async function getCurrentAdmin(request: Request): Promise<AdminContext> {
     };
   }
 
-  const id = `admin_${effectiveEmail.replace(/[^a-z0-9]+/g, "_")}`;
   const now = new Date().toISOString();
+  const newId = crypto.randomUUID();
   await db
     .prepare(
       `INSERT INTO admin_users (id, email, name, last_login_at, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT(email) DO UPDATE SET last_login_at = excluded.last_login_at, updated_at = excluded.updated_at`
     )
-    .bind(id, effectiveEmail, effectiveEmail, now, now, now)
+    .bind(newId, effectiveEmail, effectiveEmail, now, now, now)
     .run();
+
+  const user = await db.prepare("SELECT id, email, name FROM admin_users WHERE email = ?").bind(effectiveEmail).first<{ id: string; email: string; name: string }>();
+  if (!user) {
+    throw new AdminAuthError("管理员账号写入后无法读取，请检查 D1。", 503);
+  }
 
   const roleRows = await db
     .prepare(
@@ -128,9 +137,9 @@ export async function getCurrentAdmin(request: Request): Promise<AdminContext> {
   }
 
   return {
-    id,
-    email: effectiveEmail,
-    name: effectiveEmail,
+    id: user.id,
+    email: user.email,
+    name: user.name || user.email,
     roles
   };
 }

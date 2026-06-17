@@ -76,7 +76,7 @@ function assertRestoreAllowed(options: RestoreOptions = {}) {
     throw new Error(`恢复备份需要显式确认口令：${cmsRestoreConfirmationToken}`);
   }
 
-  const environment = (options.environment || process.env.CF_PAGES_BRANCH || process.env.NODE_ENV || "local").toLowerCase();
+  const environment = (options.environment || process.env.CMS_ENVIRONMENT || process.env.CF_PAGES_BRANCH || process.env.NODE_ENV || "local").toLowerCase();
   if (!options.allowProduction && ["main", "master", "production", "prod"].includes(environment)) {
     throw new Error("检测到生产环境标识，已拒绝执行 CMS 备份恢复。请仅在开发 D1 或 Preview D1 中恢复。");
   }

@@ -28,6 +28,21 @@ test("HTML sanitizer decodes entities before URL validation", () => {
   assert.match(clean, /href="\/safe"/);
 });
 
+test("HTML sanitizer normalizes anchor rel and blocks srcset/formaction", () => {
+  const clean = sanitizeHtml(
+    '<a href="https://sweetmeilon.com" target="_blank" rel="nofollow opener">ok</a><img src="/x.png" srcset="javascript:alert(1)" formaction="javascript:alert(1)">'
+  );
+  assert.equal(clean, '<a href="https://sweetmeilon.com" target="_blank" rel="noopener noreferrer">ok</a><img src="/x.png">');
+  assert.equal((clean.match(/rel=/g) || []).length, 1);
+  assert.equal(clean.includes("srcset"), false);
+  assert.equal(clean.includes("formaction"), false);
+});
+
+test("HTML sanitizer rejects URLs with control characters", () => {
+  const clean = sanitizeHtml('<a href="java\u0000script:alert(1)">bad</a><a href="/safe">safe</a>');
+  assert.equal(clean, '<a>bad</a><a href="/safe">safe</a>');
+});
+
 test("HTML sanitizer blocks mixed-case forbidden tags and srcdoc", () => {
   const clean = sanitizeHtml('<SvG><script>alert(1)</script></SvG><iframe srcdoc="<script>alert(1)</script>"></iframe><p>ok</p>');
   assert.doesNotMatch(clean, /svg|iframe|srcdoc|script/i);

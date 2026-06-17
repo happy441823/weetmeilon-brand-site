@@ -30,7 +30,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const backup = body?.backup ?? body;
     const confirm = typeof body?.confirm === "string" ? body.confirm : "";
-    const environment = typeof body?.environment === "string" ? body.environment : process.env.CF_PAGES_BRANCH || process.env.NODE_ENV;
 
     if (confirm !== cmsRestoreConfirmationToken) {
       const plan = await buildRestorePlan(db, backup);
@@ -48,7 +47,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const result = await restoreBackupPackage(db, backup, { confirm, environment });
+    const result = await restoreBackupPackage(db, backup, { confirm });
     await writeAuditLog({
       request,
       actor: admin,

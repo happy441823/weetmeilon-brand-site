@@ -5,6 +5,8 @@ import {
   getLocalAdminEmail,
   verifyCloudflareAccessJwt
 } from "../../src/lib/cms/auth-core.ts";
+import { getCurrentAdmin } from "../../src/lib/cms/auth.ts";
+import { setCmsBindingsForTest } from "../../src/lib/cms/env.ts";
 
 const encoder = new TextEncoder();
 
@@ -168,4 +170,54 @@ test("local admin bypass only works when explicitly enabled on localhost outside
     }),
     ""
   );
+});
+
+test("current admin returns existing database UUID instead of derived email id", async () => {
+  const oldAllow = process.env.CMS_ALLOW_LOCAL_ADMIN;
+  const oldEmail = process.env.CMS_LOCAL_ADMIN_EMAIL;
+  const oldNodeEnv = process.env.NODE_ENV;
+  process.env.CMS_ALLOW_LOCAL_ADMIN = "true";
+  process.env.CMS_LOCAL_ADMIN_EMAIL = "admin@sweetmeilon.com";
+  process.env.NODE_ENV = "development";
+
+  const calls = [];
+  setCmsBindingsForTest({
+    CMS_DB: {
+      prepare(sql) {
+        return {
+          values: [],
+          bind(...values) {
+            this.values = values;
+            return this;
+          },
+          async run() {
+            calls.push({ sql, values: this.values });
+            return { success: true, meta: { changes: 1 } };
+          },
+          async first() {
+            if (/SELECT id, email, name FROM admin_users/.test(sql)) {
+              return { id: "random-existing-uuid", email: "admin@sweetmeilon.com", name: "Admin User" };
+            }
+            return null;
+          },
+          async all() {
+            if (/SELECT r.name FROM admin_roles/.test(sql)) {
+              return { results: [{ name: "super_admin" }], success: true, meta: {} };
+            }
+            return { results: [], success: true, meta: {} };
+          }
+        };
+      }
+    }
+  });
+
+  const admin = await getCurrentAdmin(new Request("http://localhost:3000/admin"));
+  assert.equal(admin.id, "random-existing-uuid");
+  assert.equal(admin.name, "Admin User");
+  assert.equal(calls[0].values[0] === "admin_admin_sweetmeilon_com", false);
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_ALLOW_LOCAL_ADMIN = oldAllow;
+  process.env.CMS_LOCAL_ADMIN_EMAIL = oldEmail;
+  process.env.NODE_ENV = oldNodeEnv;
 });

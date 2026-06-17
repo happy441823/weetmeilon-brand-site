@@ -2,7 +2,7 @@ const forbiddenTags = new Set(["script", "style", "iframe", "object", "embed", "
 const allowedTags = new Set(["p", "br", "strong", "b", "em", "i", "u", "s", "a", "ul", "ol", "li", "blockquote", "h2", "h3", "h4", "table", "thead", "tbody", "tr", "th", "td", "img", "figure", "figcaption", "code", "pre"]);
 const globalAttrs = new Set(["class"]);
 const allowedAttrs: Record<string, Set<string>> = {
-  a: new Set(["href", "title", "target", "rel"]),
+  a: new Set(["href", "title", "target"]),
   img: new Set(["src", "alt", "title", "width", "height"]),
   th: new Set(["colspan", "rowspan"]),
   td: new Set(["colspan", "rowspan"])
@@ -78,7 +78,7 @@ function sanitizeAttributes(tag: string, attrs: string) {
     const name = match[1].toLowerCase();
     const rawValue = match[3] ?? match[4] ?? match[5] ?? "";
     const value = decodeHtmlEntities(rawValue).replace(/[\u0000-\u001f\u007f]/g, "").trim();
-    if (name.startsWith("on") || name === "style" || name === "srcdoc" || name.includes(":")) continue;
+    if (name.startsWith("on") || name === "style" || name === "srcdoc" || name === "srcset" || name === "formaction" || name === "rel" || name.includes(":")) continue;
     if (!globalAttrs.has(name) && !allowed.has(name)) continue;
     if ((name === "href" || name === "src") && !isSafeUrl(value)) continue;
     if (tag === "a" && name === "target" && value !== "_blank") continue;

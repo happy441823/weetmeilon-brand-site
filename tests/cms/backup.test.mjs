@@ -107,6 +107,14 @@ test("restore requires explicit dev D1 confirmation", async () => {
   );
 });
 
+test("restore uses server environment and rejects production without client override", async () => {
+  const old = process.env.CMS_ENVIRONMENT;
+  process.env.CMS_ENVIRONMENT = "production";
+  const db = mockD1();
+  await assert.rejects(() => restoreBackupPackage(db, fullBackup(), { confirm: cmsRestoreConfirmationToken }), /生产环境/);
+  process.env.CMS_ENVIRONMENT = old;
+});
+
 test("restore clears all CMS tables and inserts backup rows after confirmation", async () => {
   const backup = fullBackup();
   backup.tables.admin_roles.push({ id: "role_super", name: "super_admin" });
