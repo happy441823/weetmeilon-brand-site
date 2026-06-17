@@ -1,16 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { StoreButtons } from "@/components/StoreButtons";
+import { getPublicFooterLinks } from "@/lib/cms/public-site-chrome";
 import { BRAND } from "@/lib/constants";
 
-const footerLinks = [
+const legacyFooterLinks = [
   { label: "隐私政策", href: "/privacy-policy" },
   { label: "用户协议", href: "/terms" },
   { label: "免责声明", href: "/disclaimer" },
   { label: "联系我们", href: "/contact" }
 ];
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const footerLinks = await getPublicFooterLinks();
+  const links = footerLinks.length > 0 ? footerLinks : legacyFooterLinks;
+
   return (
     <footer className="border-t border-white/10 bg-ink/84">
       <div className="container-shell grid gap-8 py-10 md:grid-cols-[1.3fr_1fr] md:items-center">
@@ -32,7 +36,7 @@ export function SiteFooter() {
         <div className="grid gap-4 md:justify-items-end">
           <StoreButtons source="footer" />
           <div className="flex flex-wrap gap-3 text-[13px] text-aura/68">
-            {footerLinks.map((item) => (
+            {links.map((item) => (
               <Link key={item.href} href={item.href} className="transition hover:text-mint-300">
                 {item.label}
               </Link>

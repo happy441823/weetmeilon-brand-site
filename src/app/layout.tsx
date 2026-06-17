@@ -4,6 +4,7 @@ import { AgeGate } from "@/components/AgeGate";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { getPublicHeaderNavItems } from "@/lib/cms/public-site-chrome";
 import { BRAND, PRIMARY_SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -45,13 +46,15 @@ export const viewport: Viewport = {
   themeColor: "#13001f"
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const headerItems = await getPublicHeaderNavItems();
+
   return (
     <html lang="zh-CN">
       <body>
         <AnalyticsProvider />
         <AgeGate />
-        <SiteHeader />
+        <SiteHeader items={headerItems} />
         {children}
         <SiteFooter />
       </body>
