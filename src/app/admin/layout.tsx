@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "SWEETMEILON CMS 后台",
   description: "蜜女郎品牌官网内容管理后台",
@@ -12,4 +15,3 @@ export const metadata: Metadata = {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return children;
 }
-

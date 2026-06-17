@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
   const needsHostRedirect = hostname !== PRIMARY_DOMAIN;
   const needsHttpsRedirect = forwardedProto !== "https";
 
-  if (!needsHostRedirect && !needsHttpsRedirect) {
+  function nextWithAdminHeaders() {
     const response = NextResponse.next();
     if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
       response.headers.set("x-robots-tag", "noindex, nofollow");
@@ -20,9 +20,13 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
+  if (!needsHostRedirect && !needsHttpsRedirect) {
+    return nextWithAdminHeaders();
+  }
+
   if (hostname === PRIMARY_DOMAIN || REDIRECT_SOURCE_HOSTS.has(hostname) || hostname === "localhost" || hostname === "127.0.0.1") {
     if (hostname === "localhost" || hostname === "127.0.0.1") {
-      return NextResponse.next();
+      return nextWithAdminHeaders();
     }
 
     url.protocol = "https:";
