@@ -19,6 +19,11 @@ function fieldNames(fields: CmsField[]) {
   return fields.map((field) => field.name);
 }
 
+function primaryKeyFor(resource: string) {
+  const config = getResourceConfig(resource);
+  return config?.primaryKey || "id";
+}
+
 function normalizeFieldValue(field: CmsField, value: unknown) {
   if (field.type === "boolean") {
     return value === true || value === "true" || value === "1" || value === 1 ? 1 : 0;
@@ -113,7 +118,7 @@ export async function getResourceItem(resource: string, id: string) {
   const db = getCmsDb();
   if (!config) throw new Error("未知资源。");
   if (!db) return null;
-  return db.prepare(`SELECT * FROM ${quote(config.table)} WHERE id = ?`).bind(id).first<Record<string, unknown>>();
+  return db.prepare(`SELECT * FROM ${quote(config.table)} WHERE ${quote(primaryKeyFor(resource))} = ?`).bind(id).first<Record<string, unknown>>();
 }
 
 export async function createResourceItem(resource: string, input: Record<string, unknown>) {
@@ -123,10 +128,14 @@ export async function createResourceItem(resource: string, input: Record<string,
   if (!db) throw new Error("CMS_DB 未绑定。");
 
   const payload = preparePayload(resource, input);
-  const id = String(input.id || crypto.randomUUID());
+  const primaryKey = primaryKeyFor(resource);
+  const id = primaryKey === "id" ? String(input.id || crypto.randomUUID()) : String(payload[primaryKey] || "");
+  if (!id) {
+    throw new Error(`${primaryKey} 不能为空。`);
+  }
   const now = new Date().toISOString();
-  const names = ["id", ...Object.keys(payload), "created_at", "updated_at"];
-  const values = [id, ...Object.values(payload), now, now];
+  const names = primaryKey === "id" ? ["id", ...Object.keys(payload), "created_at", "updated_at"] : [...Object.keys(payload), "created_at", "updated_at"];
+  const values = primaryKey === "id" ? [id, ...Object.values(payload), now, now] : [...Object.values(payload), now, now];
   const placeholders = names.map(() => "?").join(", ");
 
   await db
@@ -151,7 +160,7 @@ export async function updateResourceItem(resource: string, id: string, input: Re
   }
 
   await db
-    .prepare(`UPDATE ${quote(config.table)} SET ${names.map((name) => `${quote(name)} = ?`).join(", ")}, updated_at = ? WHERE id = ?`)
+    .prepare(`UPDATE ${quote(config.table)} SET ${names.map((name) => `${quote(name)} = ?`).join(", ")}, updated_at = ? WHERE ${quote(primaryKeyFor(resource))} = ?`)
     .bind(...Object.values(payload), new Date().toISOString(), id)
     .run();
 
@@ -175,7 +184,7 @@ export async function deleteResourceItem(resource: string, id: string) {
     }
   }
 
-  await db.prepare(`DELETE FROM ${quote(config.table)} WHERE id = ?`).bind(id).run();
+  await db.prepare(`DELETE FROM ${quote(config.table)} WHERE ${quote(primaryKeyFor(resource))} = ?`).bind(id).run();
   return { ok: true };
 }
 

@@ -34,6 +34,7 @@ export type CmsField = {
 
 export type CmsResourceConfig = {
   table: string;
+  primaryKey?: string;
   label: string;
   labelPlural: string;
   searchable: string[];
@@ -344,6 +345,7 @@ export const cmsResources = {
   },
   site_settings: {
     table: "site_settings",
+    primaryKey: "key",
     label: "站点设置",
     labelPlural: "站点设置",
     searchable: ["key", "setting_group"],
@@ -388,8 +390,8 @@ export const cmsResources = {
   }
 } satisfies Record<string, CmsResourceConfig>;
 
-export function getResourceConfig(resource: string) {
-  return cmsResources[resource as keyof typeof cmsResources];
+export function getResourceConfig(resource: string): CmsResourceConfig | undefined {
+  return cmsResources[resource as keyof typeof cmsResources] as CmsResourceConfig | undefined;
 }
 
 export const adminNavigation = [
