@@ -1,6 +1,8 @@
 export type CmsRole = "super_admin" | "editor" | "reviewer" | "viewer";
 
 export type CmsResource =
+  | "admin_users"
+  | "admin_roles"
   | "products"
   | "categories"
   | "product_series"
@@ -62,6 +64,33 @@ export const articleStatusOptions = [
 ];
 
 export const cmsResources = {
+  admin_users: {
+    table: "admin_users",
+    label: "管理员",
+    labelPlural: "管理员管理",
+    searchable: ["email", "name"],
+    mutableRoles: ["super_admin"],
+    listColumns: ["email", "name", "is_active", "last_login_at"],
+    fields: [
+      { name: "email", label: "邮箱", type: "text", required: true },
+      { name: "name", label: "姓名", type: "text" },
+      { name: "avatar_url", label: "头像 URL", type: "text" },
+      { name: "is_active", label: "启用", type: "boolean" }
+    ]
+  },
+  admin_roles: {
+    table: "admin_roles",
+    label: "角色",
+    labelPlural: "角色管理",
+    searchable: ["name", "description"],
+    mutableRoles: ["super_admin"],
+    listColumns: ["name", "description", "updated_at"],
+    fields: [
+      { name: "name", label: "角色名", type: "text", required: true },
+      { name: "description", label: "说明", type: "textarea" },
+      { name: "permissions_json", label: "权限 JSON", type: "json", required: true }
+    ]
+  },
   products: {
     table: "products",
     label: "商品",
@@ -417,6 +446,8 @@ export const adminNavigation = [
     { label: "重定向管理", resource: "redirects" }
   ] },
   { group: "系统", items: [
+    { label: "管理员管理", resource: "admin_users" },
+    { label: "角色管理", resource: "admin_roles" },
     { label: "定时发布", resource: "publish_jobs" },
     { label: "操作日志", resource: "audit_logs" },
     { label: "导入导出与备份", resource: "backup" }
