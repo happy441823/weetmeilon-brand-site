@@ -66,7 +66,7 @@ async function main() {
     await expectStatus("/robots.txt");
     await expectStatus("/articles/how-to-choose-three-products", 404);
 
-    await expectNoindex("/admin");
+    await expectNoindex("/admin", 307);
     await expectNoindex("/admin/products");
     await expectNoindex("/admin/products/new");
     await expectNoindex("/admin/products/smoke-product-id");
