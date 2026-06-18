@@ -1,6 +1,5 @@
-import { AdminCmsClient } from "./AdminCmsClient";
+import { redirect } from "next/navigation";
 
 export default function AdminPage() {
-  return <AdminCmsClient />;
+  redirect("/admin/products");
 }
-

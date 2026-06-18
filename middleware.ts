@@ -11,6 +11,11 @@ export function middleware(request: NextRequest) {
   const needsHostRedirect = hostname !== PRIMARY_DOMAIN;
   const needsHttpsRedirect = forwardedProto !== "https";
 
+  if (pathname === "/admin") {
+    url.pathname = "/admin/";
+    return NextResponse.redirect(url, 307);
+  }
+
   function nextWithAdminHeaders() {
     const response = NextResponse.next();
     if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
