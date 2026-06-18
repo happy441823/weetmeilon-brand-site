@@ -4,6 +4,7 @@ import { detectImportPlatform, parseUrlLines } from "../../src/lib/cms/importers
 import { extractPublicMetadata } from "../../src/lib/cms/importers/metadata-fetcher.ts";
 import { previewImportInput } from "../../src/lib/cms/importers/import-job.ts";
 import { assertImportImageAllowed, safeImportedFileName } from "../../src/lib/cms/importers/image-normalizer.ts";
+import { sanitizeCreatePayload, sanitizeUpdatePayload } from "../../src/lib/cms/workflow.ts";
 
 test("detectImportPlatform allows only supported Tmall and JD hosts", () => {
   const tmall = detectImportPlatform("https://detail.tmall.com/item.htm?id=123456");
@@ -60,4 +61,11 @@ test("image import blocks unauthorized files and SVG", () => {
   assert.throws(() => assertImportImageAllowed({ authorized: true, mimeType: "image/svg+xml", size: 100 }));
   assert.doesNotThrow(() => assertImportImageAllowed({ authorized: true, mimeType: "image/webp", size: 100 }));
   assert.match(safeImportedFileName({ platform: "jd", productId: "100", checksum: "abc", extension: "webp" }), /^imports\/jd\/100\/abc\.webp$/);
+});
+
+test("import job status is not blocked by product publishing workflow guards", () => {
+  assert.equal(sanitizeCreatePayload("import_jobs", { status: "needs_review" }).status, "needs_review");
+  assert.equal(sanitizeUpdatePayload({ status: "failed" }, "import_jobs").status, "failed");
+  assert.throws(() => sanitizeCreatePayload("products", { status: "published" }));
+  assert.throws(() => sanitizeUpdatePayload({ status: "published" }, "products"));
 });

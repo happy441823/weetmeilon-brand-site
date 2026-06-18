@@ -57,6 +57,9 @@ export function sanitizeCreatePayload(resource: string, input: Record<string, un
   if (workflowInternalResources.has(resource)) {
     throw new WorkflowError("该资源只能由工作流服务写入，不能通过通用 CRUD 创建。", 403);
   }
+  if (!isWorkflowResource(resource)) {
+    return input;
+  }
   const blocked = findWorkflowField(input);
   if (!blocked) {
     return input;
@@ -68,9 +71,12 @@ export function sanitizeCreatePayload(resource: string, input: Record<string, un
   throw new WorkflowError(`字段 ${blocked} 由工作流服务端管理，不能通过通用创建接口写入。`, 400);
 }
 
-export function sanitizeUpdatePayload(input: Record<string, unknown>, resource = "") {
+export function sanitizeUpdatePayload(input: Record<string, unknown>, resource = "products") {
   if (workflowInternalResources.has(resource)) {
     throw new WorkflowError("该资源只能由工作流服务写入，不能通过通用 CRUD 更新。", 403);
+  }
+  if (!isWorkflowResource(resource)) {
+    return input;
   }
   const blocked = findWorkflowField(input);
   if (blocked) {
