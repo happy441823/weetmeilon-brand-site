@@ -14,8 +14,8 @@
     "enabled": true
   },
   "vars": {
-    "CF_ACCESS_AUDIENCE": "REPLACE_WITH_PRODUCTION_ACCESS_AUDIENCE",
-    "CF_ACCESS_ISSUER": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
+    "CF_ACCESS_AUDIENCE": "ca938f66da1f3503b2019f412b8ce698b92242027a2c0ee77f5907bc9db78228",
+    "CF_ACCESS_ISSUER": "https://delicate-block-d1f0.cloudflareaccess.com",
     "CMS_ALLOW_LOCAL_ADMIN": "false",
     "CMS_ENVIRONMENT": "production",
     "CMS_PUBLIC_D1_READS": "false"
@@ -24,7 +24,7 @@
     {
       "binding": "CMS_DB",
       "database_name": "sweetmeilon-cms-prod",
-      "database_id": "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
+      "database_id": "6d3134fc-4a46-4c49-9f22-f18a06ba30a5"
     }
   ],
   "r2_buckets": [
