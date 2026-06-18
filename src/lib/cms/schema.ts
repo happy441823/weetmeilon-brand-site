@@ -21,7 +21,12 @@ export type CmsResource =
   | "site_settings"
   | "redirects"
   | "audit_logs"
-  | "publish_jobs";
+  | "publish_jobs"
+  | "import_jobs"
+  | "imported_product_sources"
+  | "imported_media_sources"
+  | "seo_generation_jobs"
+  | "seo_push_logs";
 
 export type FieldType = "text" | "textarea" | "number" | "boolean" | "json" | "select" | "datetime";
 
@@ -445,6 +450,139 @@ export const cmsResources = {
     deleteRoles: [],
     listColumns: ["entity_type", "entity_id", "status", "run_at"],
     fields: []
+  },
+  import_jobs: {
+    table: "import_jobs",
+    label: "导入任务",
+    labelPlural: "导入任务",
+    searchable: ["source_url", "source_product_id", "title_detected", "source_shop_name", "status"],
+    mutableRoles: ["super_admin", "editor", "reviewer"],
+    readRoles: ["super_admin", "editor", "reviewer", "viewer"],
+    writeRoles: ["super_admin", "editor"],
+    deleteRoles: ["super_admin"],
+    listColumns: ["source_platform", "title_detected", "status", "authorized", "updated_at"],
+    fields: [
+      { name: "source_platform", label: "平台", type: "select", options: [{ label: "天猫/淘宝", value: "tmall" }, { label: "京东", value: "jd" }, { label: "未知", value: "unknown" }] },
+      { name: "source_url", label: "商品链接", type: "text", required: true },
+      { name: "source_product_id", label: "平台商品 ID", type: "text" },
+      { name: "source_shop_name", label: "店铺名称", type: "text" },
+      { name: "title_detected", label: "识别标题", type: "text" },
+      { name: "status", label: "状态", type: "select", options: [
+        { label: "草稿", value: "draft" },
+        { label: "待读取", value: "pending_fetch" },
+        { label: "已读取", value: "fetched" },
+        { label: "待人工审核", value: "needs_review" },
+        { label: "已导入", value: "imported" },
+        { label: "失败", value: "failed" },
+        { label: "已取消", value: "cancelled" }
+      ] },
+      { name: "authorized", label: "已确认授权", type: "boolean" },
+      { name: "error_message", label: "错误信息", type: "textarea" },
+      { name: "raw_metadata_json", label: "公开 metadata JSON", type: "json" },
+      { name: "notes", label: "备注", type: "textarea" }
+    ]
+  },
+  imported_product_sources: {
+    table: "imported_product_sources",
+    label: "商品来源绑定",
+    labelPlural: "商品来源绑定",
+    searchable: ["product_id", "source_url", "source_product_id", "source_title", "source_shop_name"],
+    mutableRoles: ["super_admin", "editor", "reviewer"],
+    readRoles: ["super_admin", "editor", "reviewer", "viewer"],
+    writeRoles: ["super_admin", "editor"],
+    deleteRoles: ["super_admin"],
+    listColumns: ["platform", "source_title", "product_id", "updated_at"],
+    fields: [
+      { name: "product_id", label: "商品 ID", type: "text" },
+      { name: "import_job_id", label: "导入任务 ID", type: "text" },
+      { name: "platform", label: "平台", type: "select", options: [{ label: "天猫/淘宝", value: "tmall" }, { label: "京东", value: "jd" }] },
+      { name: "source_url", label: "来源链接", type: "text", required: true },
+      { name: "source_product_id", label: "平台商品 ID", type: "text" },
+      { name: "source_title", label: "来源标题", type: "text" },
+      { name: "source_shop_name", label: "来源店铺", type: "text" },
+      { name: "tmall_url", label: "天猫链接", type: "text" },
+      { name: "jd_url", label: "京东链接", type: "text" },
+      { name: "last_checked_at", label: "最近检查时间", type: "datetime" }
+    ]
+  },
+  imported_media_sources: {
+    table: "imported_media_sources",
+    label: "素材来源记录",
+    labelPlural: "素材来源记录",
+    searchable: ["media_id", "source_url", "source_page_url", "license_note"],
+    mutableRoles: ["super_admin", "editor", "reviewer"],
+    readRoles: ["super_admin", "editor", "reviewer", "viewer"],
+    writeRoles: ["super_admin", "editor"],
+    deleteRoles: ["super_admin"],
+    listColumns: ["source_platform", "media_id", "authorized", "created_at"],
+    fields: [
+      { name: "media_id", label: "素材 ID", type: "text" },
+      { name: "import_job_id", label: "导入任务 ID", type: "text" },
+      { name: "source_url", label: "图片来源 URL", type: "text", required: true },
+      { name: "source_platform", label: "来源平台", type: "select", options: [{ label: "天猫/淘宝", value: "tmall" }, { label: "京东", value: "jd" }, { label: "手动上传", value: "manual" }, { label: "未知", value: "unknown" }] },
+      { name: "source_page_url", label: "来源页面 URL", type: "text" },
+      { name: "authorized", label: "已确认授权", type: "boolean" },
+      { name: "license_note", label: "授权说明", type: "textarea" },
+      { name: "checksum", label: "Checksum", type: "text" }
+    ]
+  },
+  seo_generation_jobs: {
+    table: "seo_generation_jobs",
+    label: "SEO/AI 生成任务",
+    labelPlural: "SEO/AI 生成任务",
+    searchable: ["target_type", "target_id", "generation_type", "status", "review_notes"],
+    mutableRoles: ["super_admin", "editor", "reviewer"],
+    readRoles: ["super_admin", "editor", "reviewer", "viewer"],
+    writeRoles: ["super_admin", "editor", "reviewer"],
+    deleteRoles: ["super_admin"],
+    listColumns: ["target_type", "generation_type", "status", "updated_at"],
+    fields: [
+      { name: "target_type", label: "目标类型", type: "select", options: [{ label: "商品", value: "product" }, { label: "文章", value: "article" }, { label: "FAQ", value: "faq" }, { label: "页面", value: "page" }] },
+      { name: "target_id", label: "目标 ID", type: "text" },
+      { name: "generation_type", label: "生成类型", type: "select", options: [
+        { label: "商品详情", value: "product_description" },
+        { label: "文章", value: "article" },
+        { label: "SEO 标题", value: "seo_title" },
+        { label: "SEO 描述", value: "seo_description" },
+        { label: "FAQ", value: "faq" },
+        { label: "结构化数据", value: "structured_data" },
+        { label: "社媒摘要", value: "social_excerpt" }
+      ] },
+      { name: "prompt_version", label: "Prompt 版本", type: "text" },
+      { name: "status", label: "状态", type: "select", options: [
+        { label: "草稿", value: "draft" },
+        { label: "待审核", value: "pending_review" },
+        { label: "已通过", value: "approved" },
+        { label: "已拒绝", value: "rejected" },
+        { label: "已发布", value: "published" },
+        { label: "失败", value: "failed" },
+        { label: "已取消", value: "cancelled" }
+      ] },
+      { name: "input_snapshot_json", label: "输入快照 JSON", type: "json" },
+      { name: "output_snapshot_json", label: "输出快照 JSON", type: "json" },
+      { name: "review_notes", label: "审核备注", type: "textarea" }
+    ]
+  },
+  seo_push_logs: {
+    table: "seo_push_logs",
+    label: "搜索引擎推送日志",
+    labelPlural: "搜索引擎推送日志",
+    searchable: ["url", "event_type", "provider", "status", "last_error"],
+    mutableRoles: ["super_admin"],
+    readRoles: ["super_admin", "editor", "reviewer", "viewer"],
+    writeRoles: ["super_admin"],
+    deleteRoles: [],
+    listColumns: ["provider", "event_type", "status", "url", "created_at"],
+    fields: [
+      { name: "url", label: "URL", type: "text", required: true },
+      { name: "event_type", label: "事件", type: "select", options: [{ label: "发布", value: "publish" }, { label: "更新", value: "update" }, { label: "下线", value: "offline" }, { label: "手动", value: "manual" }] },
+      { name: "provider", label: "渠道", type: "select", options: [{ label: "IndexNow", value: "indexnow" }, { label: "Google 手动清单", value: "google_manual_list" }, { label: "百度手动清单", value: "baidu_manual_list" }, { label: "Bing 手动清单", value: "bing_manual_list" }] },
+      { name: "status", label: "状态", type: "select", options: [{ label: "排队", value: "queued" }, { label: "跳过", value: "skipped" }, { label: "已发送", value: "sent" }, { label: "失败", value: "failed" }] },
+      { name: "http_status", label: "HTTP 状态", type: "number" },
+      { name: "response_text", label: "响应", type: "textarea" },
+      { name: "retry_count", label: "重试次数", type: "number" },
+      { name: "last_error", label: "最近错误", type: "textarea" }
+    ]
   }
 } satisfies Record<string, CmsResourceConfig>;
 
