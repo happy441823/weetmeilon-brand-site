@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-06-17T11:11:26.836Z",
+  "dryRun": true,
+  "applied": false,
+  "source": {
+    "products": 34,
+    "categories": 22,
+    "series": 3,
+    "articles": 10
+  },
+  "result": {
+    "products": 34,
+    "categories": 22,
+    "series": 3,
+    "articles": 10,
+    "faqs": 4,
+    "pages": 3,
+    "navigation_items": 5,
+    "footer_groups": 1,
+    "footer_items": 3,
+    "site_settings": 3,
+    "skipped": 0,
+    "failed": 0
+  },
+  "r2UploadRequired": true,
+  "r2UploadNote": "This seed writes media relationships and URLs only when source data already has them. Uploading binary images to R2 must run as a separate explicit step after dev R2 is configured."
+}

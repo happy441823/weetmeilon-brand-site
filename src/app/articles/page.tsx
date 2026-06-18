@@ -2,15 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreButtons } from "@/components/StoreButtons";
-import { publishedArticles } from "@/lib/articles";
+import { getPublishedArticles } from "@/lib/articles";
 import { withCanonical } from "@/lib/seo";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = withCanonical({
   title: "内容与科普文章",
   description: "蜜女郎科普文章：围绕材质体验、产品选择、隐私购买与日常保养，提供更清楚的购买前参考。"
 }, "/articles");
 
-export default function ArticlesPage() {
+export default async function ArticlesPage() {
+  const publishedArticles = await getPublishedArticles();
+
   return (
     <main>
       <section className="container-shell py-14 md:py-20">

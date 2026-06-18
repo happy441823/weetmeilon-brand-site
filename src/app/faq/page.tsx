@@ -2,14 +2,18 @@ import type { Metadata } from "next";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreButtons } from "@/components/StoreButtons";
 import { TrackView } from "@/components/TrackView";
+import { getPublicFaqs, type PublicFaq } from "@/lib/cms/public-faqs";
 import { withCanonical } from "@/lib/seo";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = withCanonical({
   title: "FAQ 常见问题",
   description: "蜜女郎常见问题：材质是否真实、触感是否高级、隐私发货、清洁保养、多款产品怎么选、为什么跳转官方渠道购买。"
 }, "/faq");
 
-const faqs = [
+const fallbackFaqs: PublicFaq[] = [
   ["这是蜜女郎官网吗？", "是。这里用于介绍蜜女郎品牌、材质体验、产品系列、隐私发货和清洁保养。具体商品购买请前往蜜女郎天猫或京东旗舰店。"],
   ["官网如何说明材质信息？", "官网介绍品牌材质概念和体验方向，具体商品的材质、规格、尺寸与使用说明，以官方旗舰店商品页面为准。"],
   ["原生肌凝硅是什么？", "原生肌凝硅是蜜女郎用于表达柔软、回弹、细腻表面与清洁体验的品牌材质概念，不代表医疗用途或第三方认证。"],
@@ -22,7 +26,9 @@ const faqs = [
   ["未成年人可以访问或购买吗？", "不可以。本站仅面向年满 18 周岁成年人，未成年人请立即离开。"]
 ];
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const faqs = await getPublicFaqs(fallbackFaqs);
+
   return (
     <main>
       <TrackView event="view_faq" />

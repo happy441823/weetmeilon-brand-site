@@ -4,19 +4,27 @@ import { ProductCatalogView } from "@/components/ProductCatalogView";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreButtons } from "@/components/StoreButtons";
 import { TrackView } from "@/components/TrackView";
-import { catalogSeries, getPrimaryCategoriesWithProducts, getPublicCatalogProducts, getSubcategoriesWithProducts } from "@/lib/catalog";
+import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback, getPublicSeriesWithCmsFallback } from "@/lib/cms/public-products";
 import { withCanonical } from "@/lib/seo";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = withCanonical({
   title: "产品中心",
   description: "蜜女郎产品中心：按一级类目、二级小类、产品系列与关键词筛选商品。"
 }, "/products");
 
-export default function ProductsPage() {
-  const publicProducts = getPublicCatalogProducts();
-  const primaryCategories = getPrimaryCategoriesWithProducts();
-  const subcategories = getSubcategoriesWithProducts();
-  const visibleSeries = catalogSeries.filter((item) => item.visible);
+export default async function ProductsPage() {
+  const [publicProducts, categories, series] = await Promise.all([
+    getPublicProductsWithCmsFallback(),
+    getPublicCategoriesWithCmsFallback(),
+    getPublicSeriesWithCmsFallback()
+  ]);
+  const productCategoryIds = new Set(publicProducts.flatMap((product) => [product.primaryCategoryId, product.subcategoryId].filter(Boolean)));
+  const primaryCategories = categories.filter((category) => category.visible && category.level === "primary" && productCategoryIds.has(category.id));
+  const subcategories = categories.filter((category) => category.visible && category.level === "secondary" && productCategoryIds.has(category.id));
+  const visibleSeries = series.filter((item) => item.visible);
 
   return (
     <main>

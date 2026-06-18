@@ -4,12 +4,15 @@ import { notFound } from "next/navigation";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreButtons } from "@/components/StoreButtons";
 import { TrackView } from "@/components/TrackView";
-import { getPublishedArticle, publishedArticles } from "@/lib/articles";
+import { getPublishedArticleBySlug, publishedArticles } from "@/lib/articles";
 import { canonicalPath } from "@/lib/seo";
 
 type ArticlePageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export function generateStaticParams() {
   return publishedArticles.map((article) => ({ slug: article.slug }));
@@ -17,7 +20,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = getPublishedArticle(slug);
+  const article = await getPublishedArticleBySlug(slug);
 
   if (!article) {
     return {};
@@ -35,7 +38,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
 export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const article = getPublishedArticle(slug);
+  const article = await getPublishedArticleBySlug(slug);
 
   if (!article) {
     notFound();
@@ -67,18 +70,22 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_320px]">
           <div className="rounded-[30px] border border-white/10 bg-white/[0.055] p-6 md:p-8">
             <SectionHeader eyebrow="Article" title="正文" />
-            <div className="mt-7 grid gap-8">
-              {article.sections.map((section) => (
-                <section key={section.heading}>
-                  <h2 className="text-2xl font-black text-white">{section.heading}</h2>
-                  <div className="mt-4 grid gap-4 text-sm leading-8 text-aura/68">
-                    {section.body.map((paragraph) => (
-                      <p key={paragraph}>{paragraph}</p>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
+            {article.renderedHtml ? (
+              <div className="cms-richtext mt-7" dangerouslySetInnerHTML={{ __html: article.renderedHtml }} />
+            ) : (
+              <div className="mt-7 grid gap-8">
+                {article.sections.map((section) => (
+                  <section key={section.heading}>
+                    <h2 className="text-2xl font-black text-white">{section.heading}</h2>
+                    <div className="mt-4 grid gap-4 text-sm leading-8 text-aura/68">
+                      {section.body.map((paragraph) => (
+                        <p key={paragraph}>{paragraph}</p>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
           </div>
           <aside className="h-fit rounded-[30px] border border-mint-300/20 bg-plum-950/60 p-6">
             <h2 className="text-xl font-black text-white">购买前提醒</h2>

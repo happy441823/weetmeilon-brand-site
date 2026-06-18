@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "sweetmeilon-brand-site",
-  "main": ".open-next/worker.js",
+  "main": "worker.ts",
   "compatibility_date": "2026-06-16",
   "compatibility_flags": [
     "nodejs_compat"
@@ -12,5 +12,54 @@
   },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "CF_ACCESS_AUDIENCE": "ca938f66da1f3503b2019f412b8ce698b92242027a2c0ee77f5907bc9db78228",
+    "CF_ACCESS_ISSUER": "https://delicate-block-d1f0.cloudflareaccess.com",
+    "CMS_ALLOW_LOCAL_ADMIN": "false",
+    "CMS_ENVIRONMENT": "production",
+    "CMS_PUBLIC_D1_READS": "false"
+  },
+  "d1_databases": [
+    {
+      "binding": "CMS_DB",
+      "database_name": "sweetmeilon-cms-prod",
+      "database_id": "6d3134fc-4a46-4c49-9f22-f18a06ba30a5"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CMS_MEDIA",
+      "bucket_name": "sweetmeilon-cms-media-prod"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "*/10 * * * *"
+    ]
+  },
+  "env": {
+    "preview": {
+      "vars": {
+        "CF_ACCESS_AUDIENCE": "ca938f66da1f3503b2019f412b8ce698b92242027a2c0ee77f5907bc9db78228",
+        "CF_ACCESS_ISSUER": "https://delicate-block-d1f0.cloudflareaccess.com",
+        "CMS_ALLOW_LOCAL_ADMIN": "false",
+        "CMS_ENVIRONMENT": "preview",
+        "CMS_PUBLIC_D1_READS": "true"
+      },
+      "d1_databases": [
+        {
+          "binding": "CMS_DB",
+          "database_name": "sweetmeilon-cms-dev",
+          "database_id": "9dcb92ba-12b3-41e2-81d1-a80f87882053"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "CMS_MEDIA",
+          "bucket_name": "sweetmeilon-cms-media-dev"
+        }
+      ]
+    }
   }
 }

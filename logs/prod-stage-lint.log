@@ -1,0 +1,4 @@
+
+> minvlang-brand-site@1.0.0 lint
+> tsc --noEmit -p tsconfig.check.json
+

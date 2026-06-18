@@ -5,6 +5,24 @@ const nextConfig = {
     remotePatterns: [],
     unoptimized: true
   },
+  async headers() {
+    return [
+      {
+        source: "/admin/:path*",
+        headers: [
+          { key: "x-robots-tag", value: "noindex, nofollow" },
+          { key: "cache-control", value: "no-store" }
+        ]
+      },
+      {
+        source: "/api/admin/:path*",
+        headers: [
+          { key: "x-robots-tag", value: "noindex, nofollow" },
+          { key: "cache-control", value: "no-store" }
+        ]
+      }
+    ];
+  },
   async redirects() {
     return [
       {

@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { StoreButton, StoreButtons } from "@/components/StoreButtons";
 import { BRAND } from "@/lib/constants";
+import type { PublicChromeLink } from "@/lib/cms/public-site-chrome";
 import { navItems } from "@/lib/navigation";
 
-export function SiteHeader() {
+export function SiteHeader({ items = navItems }: { items?: PublicChromeLink[] }) {
   const [open, setOpen] = useState(false);
   const [channelOpen, setChannelOpen] = useState(false);
   const channelMenuRef = useRef<HTMLDivElement>(null);
@@ -40,7 +41,7 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className="hidden items-center gap-1 lg:flex" aria-label="主导航">
-          {navItems.map((item) => (
+          {items.filter((item) => item.showDesktop !== false).map((item) => (
             <Link key={item.href} href={item.href} className="focus-ring rounded-full px-3 py-2 text-sm font-semibold text-aura/72 transition hover:bg-white/8 hover:text-white">
               {item.label}
             </Link>
@@ -70,7 +71,7 @@ export function SiteHeader() {
       {open ? (
         <div className="border-t border-white/10 bg-plum-950/96 px-4 pb-5 pt-2 lg:hidden">
           <nav className="grid gap-1" aria-label="移动端导航">
-            {navItems.map((item) => (
+            {items.filter((item) => item.showMobile !== false).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

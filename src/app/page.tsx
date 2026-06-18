@@ -7,8 +7,8 @@ import { StoreButtons } from "@/components/StoreButtons";
 import { TrackView } from "@/components/TrackView";
 import { TrustStrip } from "@/components/TrustStrip";
 import { BRAND, complianceNote, trustPoints } from "@/lib/constants";
-import { publishedArticles } from "@/lib/articles";
-import { getFeaturedActiveProducts, getFeaturedUpcomingProducts, getPrimaryCategoriesWithProducts } from "@/lib/catalog";
+import { getPublishedArticles } from "@/lib/articles";
+import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback } from "@/lib/cms/public-products";
 
 const concernCards = [
   {
@@ -29,10 +29,17 @@ const concernCards = [
   }
 ];
 
-export default function HomePage() {
-  const upcomingProducts = getFeaturedUpcomingProducts();
-  const activeProducts = getFeaturedActiveProducts().slice(0, 4);
-  const visibleCategories = getPrimaryCategoriesWithProducts();
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function HomePage() {
+  const [products, visibleCategories, homeArticles] = await Promise.all([
+    getPublicProductsWithCmsFallback(),
+    getPublicCategoriesWithCmsFallback(),
+    getPublishedArticles()
+  ]);
+  const upcomingProducts = products.filter((product) => product.status === "upcoming" && product.featured).slice(0, 3);
+  const activeProducts = products.filter((product) => product.status === "active" && product.featured).slice(0, 4);
 
   return (
     <main>
@@ -226,7 +233,7 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {publishedArticles.slice(0, 3).map((article) => (
+            {homeArticles.slice(0, 3).map((article) => (
               <Link key={article.slug} href={`/articles/${article.slug}`} className="rounded-[26px] border border-white/10 bg-plum-950/48 p-5 transition hover:-translate-y-1 hover:border-mint-300/34">
                 <p className="text-xs font-black text-mint-300">{article.category}</p>
                 <h3 className="mt-3 text-xl font-black leading-snug text-white">{article.title}</h3>

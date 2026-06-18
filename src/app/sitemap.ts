@@ -1,13 +1,17 @@
 import type { MetadataRoute } from "next";
 import { PRIMARY_SITE_URL } from "@/lib/constants";
-import { publishedArticles } from "@/lib/articles";
+import { getPublishedArticles } from "@/lib/articles";
 import { products } from "@/lib/products";
 import { catalogCategories } from "@/lib/catalog";
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const publishedArticles = await getPublishedArticles();
   const staticRoutes = [
     "",
     "/brand",
