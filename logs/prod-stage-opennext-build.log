@@ -1,0 +1,114 @@
+
+┌─────────────────────────────┐
+│ OpenNext — Cloudflare build │
+└─────────────────────────────┘
+
+WARN OpenNext is not fully compatible with Windows.
+WARN For optimal performance, it is recommended to use Windows Subsystem for Linux (WSL).
+WARN While OpenNext may function on Windows, it could encounter unpredictable failures during runtime.
+App directory: D:\05_Codex与开发\Codex\2026-06-13\new-chat\work\exports\sweetmeilon-github-upload\weetmeilon-brand-site
+Next.js version : 15.5.19
+@opennextjs/cloudflare version: 1.19.11
+@opennextjs/aws version: 4.0.2
+workerd compatibility_date: 2026-06-16
+
+┌─────────────────────────────────┐
+│ OpenNext — Building Next.js app │
+└─────────────────────────────────┘
+
+
+> minvlang-brand-site@1.0.0 build
+> next build
+
+   ▲ Next.js 15.5.19
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 6.5s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/33) ...
+   Generating static pages (8/33) 
+   Generating static pages (16/33) 
+   Generating static pages (24/33) 
+ ✓ Generating static pages (33/33)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                      Size  First Load JS
+┌ ƒ /                                         2.05 kB         113 kB
+├ ○ /_not-found                                 179 B         103 kB
+├ ƒ /admin                                      179 B         103 kB
+├ ƒ /admin/articles                             123 B         111 kB
+├ ƒ /admin/faqs                                 122 B         111 kB
+├ ƒ /admin/footer                               123 B         111 kB
+├ ƒ /admin/homepage                             123 B         111 kB
+├ ƒ /admin/navigation                           123 B         111 kB
+├ ƒ /admin/pages                                122 B         111 kB
+├ ƒ /admin/products                             123 B         111 kB
+├ ƒ /admin/products/[id]                        123 B         111 kB
+├ ƒ /admin/products/new                         123 B         111 kB
+├ ƒ /api/admin/admin-users/[id]/roles           179 B         103 kB
+├ ƒ /api/admin/admin-users/[id]/status          179 B         103 kB
+├ ƒ /api/admin/backup                           179 B         103 kB
+├ ƒ /api/admin/dashboard                        179 B         103 kB
+├ ƒ /api/admin/me                               179 B         103 kB
+├ ƒ /api/admin/media/upload                     179 B         103 kB
+├ ƒ /api/admin/resource/[resource]              179 B         103 kB
+├ ƒ /api/admin/resource/[resource]/[id]         179 B         103 kB
+├ ƒ /api/admin/schema                           179 B         103 kB
+├ ƒ /articles                                 1.35 kB         107 kB
+├ ● /articles/[slug]                          1.41 kB         107 kB
+├   ├ /articles/native-skin-silicone-meaning
+├   ├ /articles/privacy-shipping-guide
+├   └ /articles/cleaning-and-storage-basics
+├ ○ /brand                                    1.42 kB         104 kB
+├ ○ /buy                                      1.42 kB         104 kB
+├ ○ /contact                                  1.42 kB         104 kB
+├ ○ /disclaimer                                 179 B         103 kB
+├ ƒ /faq                                      1.42 kB         104 kB
+├ ○ /guide                                    1.42 kB         104 kB
+├ ƒ /internal/product-editor                  3.87 kB         106 kB
+├ ○ /material                                   454 B         106 kB
+├ ○ /not-for-minors                             179 B         103 kB
+├ ○ /privacy-policy                             179 B         103 kB
+├ ○ /privacy-shipping                         1.42 kB         104 kB
+├ ƒ /products                                 23.3 kB         134 kB
+├ ● /products/[slug]                          1.48 kB         113 kB
+├   ├ /products/native-skin-silicone-soft
+├   ├ /products/texture-detail-series
+├   ├ /products/privacy-starter-kit
+├   └ [+3 more paths]
+├ ● /products/category/[slug]                 1.99 kB         113 kB
+├   ├ /products/category/tpe-mold
+├   ├ /products/category/silicone-mold
+├   ├ /products/category/masturbator-cups
+├   └ [+2 more paths]
+├ ○ /robots.txt                                 179 B         103 kB
+├ ƒ /sitemap.xml                                179 B         103 kB
+└ ○ /terms                                      179 B         103 kB
++ First Load JS shared by all                  102 kB
+  ├ chunks/1255-5c680abb9db89955.js           46.2 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js       54.2 kB
+  └ other shared chunks (total)                  2 kB
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+
+┌──────────────────────────────┐
+│ OpenNext — Generating bundle │
+└──────────────────────────────┘
+
+Bundling middleware function...
+Bundling static assets...
+Bundling cache assets...
+Building server function: default...
+Applying code patches: 9.412s
+# copyPackageTemplateFiles
+[35m⚙️ Bundling the OpenNext server...
+[0m
+[35mWorker saved in `.open-next\worker.js` 🚀
+[0m
+OpenNext build complete.

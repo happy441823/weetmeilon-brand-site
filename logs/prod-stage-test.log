@@ -1,0 +1,530 @@
+
+> minvlang-brand-site@1.0.0 test
+> tsx --test tests/cms/*.test.mjs
+
+TAP version 13
+# Subtest: admin users and roles are super admin managed resources
+ok 1 - admin users and roles are super admin managed resources
+  ---
+  duration_ms: 3.4563
+  type: 'test'
+  ...
+# Subtest: admin navigation exposes administrator management
+ok 2 - admin navigation exposes administrator management
+  ---
+  duration_ms: 0.4606
+  type: 'test'
+  ...
+# Subtest: publish jobs are not exposed as a writable navigation resource
+ok 3 - publish jobs are not exposed as a writable navigation resource
+  ---
+  duration_ms: 0.4265
+  type: 'test'
+  ...
+# Subtest: product resource exposes dedicated CMS fields and scheduled workflow status
+ok 4 - product resource exposes dedicated CMS fields and scheduled workflow status
+  ---
+  duration_ms: 0.4569
+  type: 'test'
+  ...
+# Subtest: sensitive admin resources require super admin read access
+ok 5 - sensitive admin resources require super admin read access
+  ---
+  duration_ms: 0.3285
+  type: 'test'
+  ...
+# Subtest: workflow resource save payload omits server-managed status fields
+ok 6 - workflow resource save payload omits server-managed status fields
+  ---
+  duration_ms: 3.352
+  type: 'test'
+  ...
+# Subtest: non-workflow resource save payload keeps normal fields
+ok 7 - non-workflow resource save payload keeps normal fields
+  ---
+  duration_ms: 3.2218
+  type: 'test'
+  ...
+# Subtest: admin UI uses resource primary key for site_settings
+ok 8 - admin UI uses resource primary key for site_settings
+  ---
+  duration_ms: 0.7181
+  type: 'test'
+  ...
+# Subtest: role ids are normalized and assign role writes relation
+ok 9 - role ids are normalized and assign role writes relation
+  ---
+  duration_ms: 6.2476
+  type: 'test'
+  ...
+# Subtest: cannot remove or disable the last active super admin
+ok 10 - cannot remove or disable the last active super admin
+  ---
+  duration_ms: 3.6949
+  type: 'test'
+  ...
+# Subtest: can remove super admin when another active super admin remains
+ok 11 - can remove super admin when another active super admin remains
+  ---
+  duration_ms: 0.4398
+  type: 'test'
+  ...
+# Subtest: Cloudflare Access JWT validates signature, issuer, audience, expiration and email
+ok 12 - Cloudflare Access JWT validates signature, issuer, audience, expiration and email
+  ---
+  duration_ms: 230.211
+  type: 'test'
+  ...
+# Subtest: forged admin email headers are not an authentication mechanism
+ok 13 - forged admin email headers are not an authentication mechanism
+  ---
+  duration_ms: 2.0696
+  type: 'test'
+  ...
+# Subtest: Cloudflare Access JWT rejects wrong audience, wrong issuer, expired token and bad signature
+ok 14 - Cloudflare Access JWT rejects wrong audience, wrong issuer, expired token and bad signature
+  ---
+  duration_ms: 373.4253
+  type: 'test'
+  ...
+# Subtest: local admin bypass only works when explicitly enabled on localhost outside production
+ok 15 - local admin bypass only works when explicitly enabled on localhost outside production
+  ---
+  duration_ms: 0.5567
+  type: 'test'
+  ...
+# Subtest: current admin returns existing database UUID instead of derived email id
+ok 16 - current admin returns existing database UUID instead of derived email id
+  ---
+  duration_ms: 4.4616
+  type: 'test'
+  ...
+# Subtest: backup package requires every CMS business table
+ok 17 - backup package requires every CMS business table
+  ---
+  duration_ms: 3.3091
+  type: 'test'
+  ...
+# Subtest: restore preview returns table counts and requires manual confirmation
+ok 18 - restore preview returns table counts and requires manual confirmation
+  ---
+  duration_ms: 1.9572
+  type: 'test'
+  ...
+# Subtest: backup package lists R2 object keys for separate bucket verification
+ok 19 - backup package lists R2 object keys for separate bucket verification
+  ---
+  duration_ms: 0.2999
+  type: 'test'
+  ...
+# Subtest: restore plan compares current D1 counts with incoming backup counts
+ok 20 - restore plan compares current D1 counts with incoming backup counts
+  ---
+  duration_ms: 1.7987
+  type: 'test'
+  ...
+# Subtest: restore requires explicit dev D1 confirmation
+ok 21 - restore requires explicit dev D1 confirmation
+  ---
+  duration_ms: 1.4014
+  type: 'test'
+  ...
+# Subtest: restore uses server environment and rejects production without client override
+ok 22 - restore uses server environment and rejects production without client override
+  ---
+  duration_ms: 0.4164
+  type: 'test'
+  ...
+# Subtest: restore clears all CMS tables and inserts backup rows after confirmation
+ok 23 - restore clears all CMS tables and inserts backup rows after confirmation
+  ---
+  duration_ms: 5.1545
+  type: 'test'
+  ...
+# Subtest: restore uses D1 batch when available
+ok 24 - restore uses D1 batch when available
+  ---
+  duration_ms: 0.9721
+  type: 'test'
+  ...
+# Subtest: restore batch failure is surfaced before sequential writes run
+ok 25 - restore batch failure is surfaced before sequential writes run
+  ---
+  duration_ms: 1.107
+  type: 'test'
+  ...
+# Subtest: restore rejects unsafe backup column names before writing
+ok 26 - restore rejects unsafe backup column names before writing
+  ---
+  duration_ms: 0.752
+  type: 'test'
+  ...
+# Subtest: backup table names match migration tables
+ok 27 - backup table names match migration tables
+  ---
+  duration_ms: 6.0556
+  type: 'test'
+  ...
+# Subtest: bootstrap admin SQL creates one super admin by normalized email
+ok 28 - bootstrap admin SQL creates one super admin by normalized email
+  ---
+  duration_ms: 3.195
+  type: 'test'
+  ...
+# Subtest: bootstrap SQL escapes quotes and rejects invalid email
+ok 29 - bootstrap SQL escapes quotes and rejects invalid email
+  ---
+  duration_ms: 1.0115
+  type: 'test'
+  ...
+# Subtest: verify SQL is read-only
+ok 30 - verify SQL is read-only
+  ---
+  duration_ms: 0.3226
+  type: 'test'
+  ...
+# Subtest: HTML sanitizer removes scripts, event handlers, dangerous URLs, iframes and SVG
+ok 31 - HTML sanitizer removes scripts, event handlers, dangerous URLs, iframes and SVG
+  ---
+  duration_ms: 4.8164
+  type: 'test'
+  ...
+# Subtest: HTML sanitizer decodes entities before URL validation
+ok 32 - HTML sanitizer decodes entities before URL validation
+  ---
+  duration_ms: 1.0247
+  type: 'test'
+  ...
+# Subtest: HTML sanitizer normalizes anchor rel and blocks srcset/formaction
+ok 33 - HTML sanitizer normalizes anchor rel and blocks srcset/formaction
+  ---
+  duration_ms: 1.8044
+  type: 'test'
+  ...
+# Subtest: HTML sanitizer rejects URLs with control characters
+ok 34 - HTML sanitizer rejects URLs with control characters
+  ---
+  duration_ms: 0.843
+  type: 'test'
+  ...
+# Subtest: HTML sanitizer blocks mixed-case forbidden tags and srcdoc
+ok 35 - HTML sanitizer blocks mixed-case forbidden tags and srcdoc
+  ---
+  duration_ms: 0.4138
+  type: 'test'
+  ...
+# Subtest: Markdown is escaped before HTML conversion and sanitized afterwards
+ok 36 - Markdown is escaped before HTML conversion and sanitized afterwards
+  ---
+  duration_ms: 0.5246
+  type: 'test'
+  ...
+# Subtest: content blocks and modules use strict allowed type schemas
+ok 37 - content blocks and modules use strict allowed type schemas
+  ---
+  duration_ms: 2.2199
+  type: 'test'
+  ...
+# Subtest: content block validation rejects unknown fields and nested unsafe arrays
+ok 38 - content block validation rejects unknown fields and nested unsafe arrays
+  ---
+  duration_ms: 0.465
+  type: 'test'
+  ...
+# Subtest: config JSON rejects dangerous strings recursively
+ok 39 - config JSON rejects dangerous strings recursively
+  ---
+  duration_ms: 1.5122
+  type: 'test'
+  ...
+# Subtest: media delete refuses referenced asset
+ok 40 - media delete refuses referenced asset
+  ---
+  duration_ms: 19.7435
+  type: 'test'
+  ...
+# Subtest: media delete removes R2 object before D1 record
+ok 41 - media delete removes R2 object before D1 record
+  ---
+  duration_ms: 1.3057
+  type: 'test'
+  ...
+# Subtest: media usages only scan explicit media fields and structured blocks
+ok 42 - media usages only scan explicit media fields and structured blocks
+  ---
+  duration_ms: 1.9758
+  type: 'test'
+  ...
+# Subtest: media magic detection accepts jpeg png and webp
+ok 43 - media magic detection accepts jpeg png and webp
+  ---
+  duration_ms: 2.3789
+  type: 'test'
+  ...
+# Subtest: media magic detection rejects svg and MIME spoofing
+ok 44 - media magic detection rejects svg and MIME spoofing
+  ---
+  duration_ms: 1.7549
+  type: 'test'
+  ...
+# Subtest: media upload batch limits count, total size and group
+ok 45 - media upload batch limits count, total size and group
+  ---
+  duration_ms: 0.8031
+  type: 'test'
+  ...
+# Subtest: products scheduled status migration rebuilds products with scheduled constraint
+ok 46 - products scheduled status migration rebuilds products with scheduled constraint
+  ---
+  duration_ms: 2.1024
+  type: 'test'
+  ...
+# Subtest: products scheduled status migration preserves core product indexes
+ok 47 - products scheduled status migration preserves core product indexes
+  ---
+  duration_ms: 0.6367
+  type: 'test'
+  ...
+# Subtest: CMS article rendering preserves safe rich text structure
+ok 48 - CMS article rendering preserves safe rich text structure
+  ---
+  duration_ms: 3.9828
+  type: 'test'
+  ...
+# Subtest: CMS article content blocks render structured public HTML
+ok 49 - CMS article content blocks render structured public HTML
+  ---
+  duration_ms: 1.8468
+  type: 'test'
+  ...
+# Subtest: public D1 reads are feature flagged
+ok 50 - public D1 reads are feature flagged
+  ---
+  duration_ms: 1.7242
+  type: 'test'
+  ...
+# Subtest: public visibility where clause excludes drafts, pending review, offline, archived and future scheduled content
+ok 51 - public visibility where clause excludes drafts, pending review, offline, archived and future scheduled content
+  ---
+  duration_ms: 0.684
+  type: 'test'
+  ...
+# Subtest: public D1 read returns fallback safely when disabled, unbound, or query fails
+ok 52 - public D1 read returns fallback safely when disabled, unbound, or query fails
+  ---
+  duration_ms: 4.2453
+  type: 'test'
+  ...
+# Subtest: public D1 read binds current time and returns rows
+ok 53 - public D1 read binds current time and returns rows
+  ---
+  duration_ms: 0.7667
+  type: 'test'
+  ...
+# Subtest: public D1 reads use sort_order for ordered resources
+ok 54 - public D1 reads use sort_order for ordered resources
+  ---
+  duration_ms: 0.6204
+  type: 'test'
+  ...
+# Subtest: public FAQs do not fall back when D1 returns an empty set
+ok 55 - public FAQs do not fall back when D1 returns an empty set
+  ---
+  duration_ms: 4.2374
+  type: 'test'
+  ...
+# Subtest: public products read from D1 and map coming soon without purchase buttons
+ok 56 - public products read from D1 and map coming soon without purchase buttons
+  ---
+  duration_ms: 4.9032
+  type: 'test'
+  ...
+# Subtest: public products map per-product media public urls instead of one placeholder
+ok 57 - public products map per-product media public urls instead of one placeholder
+  ---
+  duration_ms: 1.1924
+  type: 'test'
+  ...
+# Subtest: public products do not fall back to static content when D1 returns an empty set
+ok 58 - public products do not fall back to static content when D1 returns an empty set
+  ---
+  duration_ms: 1.822
+  type: 'test'
+  ...
+# Subtest: public redirects validate only same-site 301 and 302 paths
+ok 59 - public redirects validate only same-site 301 and 302 paths
+  ---
+  duration_ms: 8.142
+  type: 'test'
+  ...
+# Subtest: public redirects read D1 rows and reject loops
+ok 60 - public redirects read D1 rows and reject loops
+  ---
+  duration_ms: 3.1752
+  type: 'test'
+  ...
+# Subtest: public header navigation reads visible D1 links and filters unsafe paths
+ok 61 - public header navigation reads visible D1 links and filters unsafe paths
+  ---
+  duration_ms: 5.1131
+  type: 'test'
+  ...
+# Subtest: public header navigation does not fall back when D1 returns an empty set
+ok 62 - public header navigation does not fall back when D1 returns an empty set
+  ---
+  duration_ms: 0.4441
+  type: 'test'
+  ...
+# Subtest: public footer reads D1 items in visible groups
+ok 63 - public footer reads D1 items in visible groups
+  ---
+  duration_ms: 0.6052
+  type: 'test'
+  ...
+# Subtest: public site chrome falls back only when D1 query fails
+ok 64 - public site chrome falls back only when D1 query fails
+  ---
+  duration_ms: 0.6103
+  type: 'test'
+  ...
+# Subtest: system roles cannot be edited or deleted through generic CRUD
+ok 65 - system roles cannot be edited or deleted through generic CRUD
+  ---
+  duration_ms: 2.6357
+  type: 'test'
+  ...
+# Subtest: content revisions persist the real actor id
+ok 66 - content revisions persist the real actor id
+  ---
+  duration_ms: 1.4
+  type: 'test'
+  ...
+# Subtest: scheduled publish jobs publish due content and complete the job
+ok 67 - scheduled publish jobs publish due content and complete the job
+  ---
+  duration_ms: 5.3334
+  type: 'test'
+  ...
+# Subtest: scheduled publish jobs record failures and last_error
+ok 68 - scheduled publish jobs record failures and last_error
+  ---
+  duration_ms: 0.7273
+  type: 'test'
+  ...
+# Subtest: scheduled publish job does not execute when lock is not acquired
+ok 69 - scheduled publish job does not execute when lock is not acquired
+  ---
+  duration_ms: 0.3123
+  type: 'test'
+  ...
+# Subtest: scheduled publish job retries before max attempts and fails when target is missing
+ok 70 - scheduled publish job retries before max attempts and fails when target is missing
+  ---
+  duration_ms: 0.6763
+  type: 'test'
+  ...
+# Subtest: cms seed SQL is idempotent and updates existing products
+ok 71 - cms seed SQL is idempotent and updates existing products
+  ---
+  duration_ms: 1.9825
+  type: 'test'
+  ...
+# Subtest: cms seed SQL safely escapes product text
+ok 72 - cms seed SQL safely escapes product text
+  ---
+  duration_ms: 0.3466
+  type: 'test'
+  ...
+# Subtest: site_settings CRUD uses key as primary key
+ok 73 - site_settings CRUD uses key as primary key
+  ---
+  duration_ms: 6.8639
+  type: 'test'
+  ...
+# Subtest: site_settings hides sensitive values from non super admin reads
+ok 74 - site_settings hides sensitive values from non super admin reads
+  ---
+  duration_ms: 0.8596
+  type: 'test'
+  ...
+# Subtest: slugify keeps Chinese and normalizes separators
+ok 75 - slugify keeps Chinese and normalizes separators
+  ---
+  duration_ms: 1.6318
+  type: 'test'
+  ...
+# Subtest: URL validator blocks dangerous protocols
+ok 76 - URL validator blocks dangerous protocols
+  ---
+  duration_ms: 1.2857
+  type: 'test'
+  ...
+# Subtest: scheduled publish rule requires published_at not in future for public reads
+ok 77 - scheduled publish rule requires published_at not in future for public reads
+  ---
+  duration_ms: 0.2672
+  type: 'test'
+  ...
+# Subtest: generic create does not allow arbitrary workflow fields
+ok 78 - generic create does not allow arbitrary workflow fields
+  ---
+  duration_ms: 3.45
+  type: 'test'
+  ...
+# Subtest: generic update rejects status and publish metadata bypasses
+ok 79 - generic update rejects status and publish metadata bypasses
+  ---
+  duration_ms: 0.5671
+  type: 'test'
+  ...
+# Subtest: editor can submit review but cannot publish or offline content
+ok 80 - editor can submit review but cannot publish or offline content
+  ---
+  duration_ms: 0.5913
+  type: 'test'
+  ...
+# Subtest: reviewer and super_admin can publish and offline workflow content
+ok 81 - reviewer and super_admin can publish and offline workflow content
+  ---
+  duration_ms: 0.2958
+  type: 'test'
+  ...
+# Subtest: workflow transition table is explicit
+ok 82 - workflow transition table is explicit
+  ---
+  duration_ms: 0.2833
+  type: 'test'
+  ...
+# Subtest: workflow validates from-to status, schedule time and product-only coming soon
+ok 83 - workflow validates from-to status, schedule time and product-only coming soon
+  ---
+  duration_ms: 0.4869
+  type: 'test'
+  ...
+# Subtest: scheduled_at and publish_jobs are protected from generic writes
+ok 84 - scheduled_at and publish_jobs are protected from generic writes
+  ---
+  duration_ms: 0.3567
+  type: 'test'
+  ...
+# Subtest: scheduled content can leave schedule through offline or archive
+ok 85 - scheduled content can leave schedule through offline or archive
+  ---
+  duration_ms: 0.6819
+  type: 'test'
+  ...
+# Subtest: publish quality validation rejects incomplete content
+ok 86 - publish quality validation rejects incomplete content
+  ---
+  duration_ms: 1.3995
+  type: 'test'
+  ...
+1..86
+# tests 86
+# suites 0
+# pass 86
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5809.2373
