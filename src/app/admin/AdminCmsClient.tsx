@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { usePathname } from "next/navigation";
 
 type Field = {
   name: string;
@@ -78,6 +79,23 @@ export function buildAdminSavePayload(resource: string, form: Record<string, unk
   return Object.fromEntries(Object.entries(form).filter(([key]) => !workflowManagedClientFields.has(key)));
 }
 
+const adminPathResources = [
+  { path: "/admin/products", resource: "products" },
+  { path: "/admin/articles", resource: "articles" },
+  { path: "/admin/pages", resource: "pages" },
+  { path: "/admin/homepage", resource: "homepage_sections" },
+  { path: "/admin/faqs", resource: "faqs" },
+  { path: "/admin/navigation", resource: "navigation_items" },
+  { path: "/admin/footer", resource: "footer_items" },
+  { path: "/admin/imports", resource: "import_jobs" },
+  { path: "/admin/seo/indexing", resource: "seo_push_logs" }
+];
+
+export function resourceFromAdminPath(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, "") || "/admin";
+  return adminPathResources.find((item) => normalized === item.path || normalized.startsWith(`${item.path}/`))?.resource;
+}
+
 function emptyValue(field: Field) {
   if (field.type === "boolean") return false;
   if (field.type === "number") return 0;
@@ -96,9 +114,11 @@ function readError(error: unknown) {
 }
 
 export function AdminCmsClient({ initialResource = "dashboard", initialItemId = "" }: { initialResource?: string; initialItemId?: string } = {}) {
+  const pathname = usePathname();
+  const pathResource = resourceFromAdminPath(pathname || "");
   const [schema, setSchema] = useState<SchemaResponse | null>(null);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
-  const [resource, setResource] = useState(initialResource);
+  const [resource, setResource] = useState(pathResource || initialResource);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
@@ -109,6 +129,13 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   const [isPending, startTransition] = useTransition();
 
   const config = resource !== "dashboard" && resource !== "backup" ? schema?.resources[resource] : null;
+
+  useEffect(() => {
+    const nextResource = resourceFromAdminPath(pathname || "");
+    if (nextResource && nextResource !== resource) {
+      setResource(nextResource);
+    }
+  }, [pathname, resource]);
 
   useEffect(() => {
     async function loadSchema() {
@@ -315,7 +342,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   const statusOptions = useMemo(() => config?.fields.find((field) => field.name === "status")?.options || [], [config]);
 
   return (
-    <main className="min-h-screen bg-[#09000f] text-white">
+    <main data-admin-shell className="min-h-screen bg-[#09000f] text-white">
       <div className="grid min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="border-r border-white/10 bg-[#12031d] px-5 py-6">
           <div className="mb-8">

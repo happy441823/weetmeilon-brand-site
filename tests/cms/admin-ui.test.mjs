@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildAdminSavePayload, resourceItemKey, resourcePrimaryKey } from "../../src/app/admin/AdminCmsClient.tsx";
+import { buildAdminSavePayload, resourceFromAdminPath, resourceItemKey, resourcePrimaryKey } from "../../src/app/admin/AdminCmsClient.tsx";
 
 test("workflow resource save payload omits server-managed status fields", () => {
   const payload = buildAdminSavePayload("articles", {
@@ -29,4 +29,10 @@ test("admin UI uses resource primary key for site_settings", () => {
   const row = { key: "seo.default_title", id: "wrong-id" };
   assert.equal(resourcePrimaryKey(config), "key");
   assert.equal(resourceItemKey(row, config), "seo.default_title");
+});
+
+test("admin UI derives import and SEO resources from route path", () => {
+  assert.equal(resourceFromAdminPath("/admin/imports"), "import_jobs");
+  assert.equal(resourceFromAdminPath("/admin/imports/jobs"), "import_jobs");
+  assert.equal(resourceFromAdminPath("/admin/seo/indexing"), "seo_push_logs");
 });
