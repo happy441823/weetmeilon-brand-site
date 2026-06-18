@@ -29,6 +29,11 @@ export const cmsBackupTables = [
   "redirects",
   "audit_logs",
   "publish_jobs",
+  "import_jobs",
+  "imported_product_sources",
+  "imported_media_sources",
+  "seo_generation_jobs",
+  "seo_push_logs",
   "migration_logs"
 ] as const;
 

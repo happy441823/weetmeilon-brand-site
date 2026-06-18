@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
@@ -167,9 +167,15 @@ test("restore rejects unsafe backup column names before writing", async () => {
 });
 
 test("backup table names match migration tables", () => {
-  const sql = readFileSync(join(repoRoot, "migrations", "0001_admin_cms.sql"), "utf8");
-  const migrationTables = [...sql.matchAll(/CREATE TABLE IF NOT EXISTS\s+([a-z_]+)/g)].map((match) => match[1]);
-  assert.equal(cmsBackupTables.length, 31);
+  const sql = readdirSync(join(repoRoot, "migrations"))
+    .filter((name) => name.endsWith(".sql"))
+    .sort()
+    .map((name) => readFileSync(join(repoRoot, "migrations", name), "utf8"))
+    .join("\n");
+  const migrationTables = [...sql.matchAll(/CREATE TABLE IF NOT EXISTS\s+([a-z_]+)/g)]
+    .map((match) => match[1])
+    .filter((table) => !table.endsWith("_new"));
+  assert.equal(cmsBackupTables.length, migrationTables.length);
   assert.equal(cmsBackupTables.includes("product_images"), true);
   assert.equal(cmsBackupTables.includes("product_media"), false);
   assert.deepEqual([...cmsBackupTables].sort(), migrationTables.sort());
