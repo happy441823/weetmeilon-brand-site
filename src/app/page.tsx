@@ -9,6 +9,7 @@ import { TrustStrip } from "@/components/TrustStrip";
 import { BRAND, complianceNote, trustPoints } from "@/lib/constants";
 import { getPublishedArticles } from "@/lib/articles";
 import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback } from "@/lib/cms/public-products";
+import { pickHomeBrowseCategories } from "@/lib/home-categories";
 
 const concernCards = [
   {
@@ -33,11 +34,12 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const [products, visibleCategories, homeArticles] = await Promise.all([
+  const [products, categories, homeArticles] = await Promise.all([
     getPublicProductsWithCmsFallback(),
     getPublicCategoriesWithCmsFallback(),
     getPublishedArticles()
   ]);
+  const visibleCategories = pickHomeBrowseCategories(categories);
   const upcomingProducts = products.filter((product) => product.status === "upcoming" && product.featured).slice(0, 3);
   const activeProducts = products.filter((product) => product.status === "active" && product.featured).slice(0, 4);
 
