@@ -27,6 +27,52 @@ function primaryKeyFor(resource: string) {
   return config?.primaryKey || "id";
 }
 
+function productListWhereSql(config: NonNullable<ReturnType<typeof getResourceConfig>>, options: QueryOptions) {
+  const where: string[] = [];
+  const values: unknown[] = [];
+
+  if (options.q && config.searchable.length > 0) {
+    where.push(`(${config.searchable.map((field) => `p.${quote(field)} LIKE ?`).join(" OR ")})`);
+    for (const _field of config.searchable) {
+      values.push(`%${options.q}%`);
+    }
+  }
+
+  if (options.status && config.fields.some((field) => field.name === "status")) {
+    where.push("p.status = ?");
+    values.push(options.status);
+  }
+
+  return { whereSql: where.length ? `WHERE ${where.join(" AND ")}` : "", values };
+}
+
+async function listProductsWithThumbnails(config: NonNullable<ReturnType<typeof getResourceConfig>>, options: QueryOptions, page: number, pageSize: number) {
+  const db = getCmsDb();
+  if (!db) {
+    return { rows: [], total: 0, dbReady: false };
+  }
+
+  const { whereSql, values } = productListWhereSql(config, options);
+  const count = await db.prepare(`SELECT COUNT(*) AS total FROM ${quote(config.table)} p ${whereSql}`).bind(...values).first<{ total: number }>();
+  const rows = await db
+    .prepare(
+      `SELECT p.*, cover.public_url AS _thumbnail_url, cover.alt AS _thumbnail_alt, cover.file_name AS _thumbnail_file_name
+       FROM ${quote(config.table)} p
+       LEFT JOIN media_assets cover ON p.cover_media_id = cover.id
+       ${whereSql}
+       ORDER BY p.updated_at DESC
+       LIMIT ? OFFSET ?`
+    )
+    .bind(...values, pageSize, (page - 1) * pageSize)
+    .all<Record<string, unknown>>();
+
+  return {
+    rows: rows.results.map((row) => redactSensitiveSettings("products", row, options.hideSensitiveSettings)),
+    total: count?.total || 0,
+    dbReady: true
+  };
+}
+
 const systemRoleNames = new Set(["super_admin", "editor", "reviewer", "viewer"]);
 const systemRoleIds = new Set(["role_super_admin", "role_editor", "role_reviewer", "role_viewer"]);
 
@@ -113,6 +159,9 @@ export async function listResource(resource: string, options: QueryOptions = {})
 
   const page = Math.max(1, options.page || 1);
   const pageSize = Math.min(100, Math.max(1, options.pageSize || 20));
+  if (resource === "products") {
+    return listProductsWithThumbnails(config, options, page, pageSize);
+  }
   const where: string[] = [];
   const values: unknown[] = [];
 
@@ -147,6 +196,18 @@ export async function getResourceItem(resource: string, id: string, options: { h
   const db = getCmsDb();
   if (!config) throw new Error("未知资源。");
   if (!db) return null;
+  if (resource === "products") {
+    const row = await db
+      .prepare(
+        `SELECT p.*, cover.public_url AS _thumbnail_url, cover.alt AS _thumbnail_alt, cover.file_name AS _thumbnail_file_name
+         FROM ${quote(config.table)} p
+         LEFT JOIN media_assets cover ON p.cover_media_id = cover.id
+         WHERE p.${quote(primaryKeyFor(resource))} = ?`
+      )
+      .bind(id)
+      .first<Record<string, unknown>>();
+    return row ? redactSensitiveSettings(resource, row, options.hideSensitiveSettings) : null;
+  }
   const row = await db.prepare(`SELECT * FROM ${quote(config.table)} WHERE ${quote(primaryKeyFor(resource))} = ?`).bind(id).first<Record<string, unknown>>();
   return row ? redactSensitiveSettings(resource, row, options.hideSensitiveSettings) : null;
 }

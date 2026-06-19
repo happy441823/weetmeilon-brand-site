@@ -111,6 +111,52 @@ function displayValue(value: unknown) {
   return String(value);
 }
 
+const thumbnailResources = new Set(["products", "media_assets"]);
+
+function resourceHasThumbnail(resource: string) {
+  return thumbnailResources.has(resource);
+}
+
+function rowThumbnailUrl(resource: string, row?: Record<string, unknown> | null) {
+  if (!row) return "";
+  if (resource === "products") return String(row._thumbnail_url || "");
+  if (resource === "media_assets") return String(row.public_url || "");
+  return "";
+}
+
+function rowThumbnailAlt(row?: Record<string, unknown> | null) {
+  if (!row) return "";
+  return String(row._thumbnail_alt || row.alt || row.title || row.name || row.file_name || "CMS image");
+}
+
+function isImageRow(row?: Record<string, unknown> | null) {
+  if (!row) return false;
+  const mime = String(row.mime_type || "");
+  const url = String(row.public_url || row._thumbnail_url || "");
+  return mime.startsWith("image/") || /\.(avif|gif|jpe?g|png|webp|svg)(\?|#|$)/i.test(url);
+}
+
+function AdminThumbnail({ url, alt, size = "sm", muted = false }: { url: string; alt: string; size?: "sm" | "lg"; muted?: boolean }) {
+  const boxClass = size === "lg" ? "h-40 w-full" : "h-16 w-16";
+  if (!url) {
+    return (
+      <div className={`${boxClass} grid place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-[10px] font-black uppercase tracking-[0.14em] text-white/34`}>
+        No image
+      </div>
+    );
+  }
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className={`${boxClass} group block overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]`}>
+      <img
+        src={url}
+        alt={alt}
+        loading="lazy"
+        className={`h-full w-full object-cover transition group-hover:scale-105 ${muted ? "opacity-60" : ""}`}
+      />
+    </a>
+  );
+}
+
 function readError(error: unknown) {
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
 }
@@ -429,6 +475,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                   <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left text-sm">
                     <thead>
                       <tr className="text-white/48">
+                        {resourceHasThumbnail(resource) ? <th className="border-b border-white/10 px-3 py-3 font-black">图片</th> : null}
                         {config.listColumns.map((column) => <th key={column} className="border-b border-white/10 px-3 py-3 font-black">{column}</th>)}
                         <th className="border-b border-white/10 px-3 py-3 font-black">操作</th>
                       </tr>
@@ -436,6 +483,17 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                     <tbody>
                       {rows.map((row) => (
                         <tr key={resourceItemKey(row, config)} className="text-white/78">
+                          {resourceHasThumbnail(resource) ? (
+                            <td className="border-b border-white/8 px-3 py-3 align-middle">
+                              {isImageRow(row) || resource === "products" ? (
+                                <AdminThumbnail url={rowThumbnailUrl(resource, row)} alt={rowThumbnailAlt(row)} />
+                              ) : (
+                                <div className="grid h-16 w-16 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-[10px] font-black uppercase text-white/34">
+                                  File
+                                </div>
+                              )}
+                            </td>
+                          ) : null}
                           {config.listColumns.map((column) => <td key={column} className="border-b border-white/8 px-3 py-3">{displayValue(row[column])}</td>)}
                           <td className="border-b border-white/8 px-3 py-3">
                             <button type="button" onClick={() => editRow(row)} className="rounded-full border border-mint-300/35 px-3 py-1 text-xs font-black text-mint-300 hover:bg-mint-300/10">编辑</button>
@@ -443,7 +501,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                         </tr>
                       ))}
                       {rows.length === 0 ? (
-                        <tr><td colSpan={config.listColumns.length + 1} className="px-3 py-10 text-center text-white/45">暂无数据。请先执行 D1 migration 和数据迁移脚本。</td></tr>
+                        <tr><td colSpan={config.listColumns.length + (resourceHasThumbnail(resource) ? 2 : 1)} className="px-3 py-10 text-center text-white/45">暂无数据。请先执行 D1 migration 和数据迁移脚本。</td></tr>
                       ) : null}
                     </tbody>
                   </table>
@@ -456,13 +514,23 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                   <button type="button" onClick={resetForm} className="rounded-full border border-white/12 px-3 py-1 text-xs font-bold text-white/70 hover:bg-white/8">清空</button>
                 </div>
                 {resource === "products" ? (
-                  <ProductEditorPanel form={form} fields={config.fields} setField={setField} />
+                  <ProductEditorPanel form={form} fields={config.fields} setField={setField} thumbnailUrl={rowThumbnailUrl(resource, selected)} thumbnailAlt={rowThumbnailAlt(selected)} />
                 ) : resource === "articles" ? (
                   <ArticleEditorPanel form={form} fields={config.fields} setField={setField} />
                 ) : resource === "pages" || resource === "homepage_sections" ? (
                   <ModuleEditorPanel resource={resource} form={form} fields={config.fields} setField={setField} />
                 ) : (
                   <div className="grid gap-3">
+                    {resource === "media_assets" ? (
+                      <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                        <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-mint-300">Image Preview</p>
+                        {isImageRow(selected || form) ? (
+                          <AdminThumbnail url={rowThumbnailUrl(resource, selected || form)} alt={rowThumbnailAlt(selected || form)} size="lg" />
+                        ) : (
+                          <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-6 text-sm text-white/45">当前素材不是图片，或还没有公开 URL。</div>
+                        )}
+                      </div>
+                    ) : null}
                     {config.fields.map((field) => (
                       <label key={field.name} className="grid gap-1.5">
                         <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
@@ -535,11 +603,15 @@ function fieldByName(fields: Field[], name: string) {
 function ProductEditorPanel({
   form,
   fields,
-  setField
+  setField,
+  thumbnailUrl,
+  thumbnailAlt
 }: {
   form: Record<string, unknown>;
   fields: Field[];
   setField: (name: string, value: unknown) => void;
+  thumbnailUrl?: string;
+  thumbnailAlt?: string;
 }) {
   const [preview, setPreview] = useState<"desktop" | "mobile">("desktop");
   const [contentMode, setContentMode] = useState<"quick" | "copy" | "media" | "seo">("quick");
@@ -672,6 +744,11 @@ function ProductEditorPanel({
           </div>
         </div>
         <article className={`rounded-xl border border-white/10 bg-[#100019] p-4 ${preview === "mobile" ? "max-w-[320px]" : ""}`}>
+          {thumbnailUrl ? (
+            <div className="mb-4">
+              <AdminThumbnail url={thumbnailUrl} alt={thumbnailAlt || title} size="lg" />
+            </div>
+          ) : null}
           <p className="text-xs font-black text-mint-300">{String(form.primary_category_id || "产品")}</p>
           <h4 className="mt-2 text-xl font-black text-white">{title}</h4>
           <p className="mt-2 text-sm leading-6 text-white/60">{summary}</p>
