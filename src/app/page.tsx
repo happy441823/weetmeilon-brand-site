@@ -10,6 +10,7 @@ import { BRAND, complianceNote, trustPoints } from "@/lib/constants";
 import { getPublishedArticles } from "@/lib/articles";
 import { readPublicCmsRows } from "@/lib/cms/public-content";
 import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback } from "@/lib/cms/public-products";
+import type { CatalogCategory, PublicCatalogProduct } from "@/types/catalog";
 
 type HomepageSectionRow = {
   id: string;
@@ -28,6 +29,12 @@ type HomepageSectionConfig = {
   items?: { title?: string; description?: string; href?: string }[];
 };
 
+type CategoryBrowseGroup = {
+  primary: CatalogCategory;
+  subcategories: CatalogCategory[];
+  productCount: number;
+};
+
 function parseHomepageConfig(value: string | null | undefined): HomepageSectionConfig {
   if (!value) return {};
   try {
@@ -36,6 +43,22 @@ function parseHomepageConfig(value: string | null | undefined): HomepageSectionC
   } catch {
     return {};
   }
+}
+
+function buildCategoryBrowseGroups(categories: CatalogCategory[], products: PublicCatalogProduct[]): CategoryBrowseGroup[] {
+  const visibleCategories = categories.filter((category) => category.visible);
+  const productCategoryIds = new Set(products.flatMap((product) => [product.primaryCategoryId, product.subcategoryId].filter(Boolean)));
+
+  return visibleCategories
+    .filter((category) => category.level === "primary" && productCategoryIds.has(category.id))
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((primary) => ({
+      primary,
+      productCount: products.filter((product) => product.primaryCategoryId === primary.id).length,
+      subcategories: visibleCategories
+        .filter((category) => category.level === "secondary" && category.parentId === primary.id && productCategoryIds.has(category.id))
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+    }));
 }
 
 async function getHomepageSections() {
@@ -127,6 +150,7 @@ export default async function HomePage() {
   ]);
   const upcomingProducts = products.filter((product) => product.status === "upcoming" && product.featured).slice(0, 3);
   const activeProducts = products.filter((product) => product.status === "active" && product.featured).slice(0, 4);
+  const categoryGroups = buildCategoryBrowseGroups(visibleCategories, products);
 
   return (
     <main>
@@ -254,21 +278,54 @@ export default async function HomePage() {
           <SectionHeader
             eyebrow="Browse By Type"
             title="按类型浏览"
-            description="分类用于帮助用户从产品类型进入，不等同于材质系列。"
+            description="先选择产品大类，再进入更细的小类。这里展示的是商品类型，不等同于材质系列。"
           />
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {visibleCategories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/products/category/${category.slug}`}
-                className="rounded-[24px] border border-white/10 bg-plum-950/50 p-5 transition hover:-translate-y-1 hover:border-mint-300/34"
-              >
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">Category</p>
-                <h3 className="mt-3 text-xl font-black text-white">{category.shortName}</h3>
-                <p className="mt-3 text-sm leading-7 text-aura/62">{category.description}</p>
-              </Link>
-            ))}
-          </div>
+          {categoryGroups.length > 0 ? (
+            <div className="mt-8 grid gap-4 lg:grid-cols-4">
+              {categoryGroups.map((group) => (
+                <article
+                  key={group.primary.id}
+                  className="rounded-[24px] border border-white/10 bg-plum-950/50 p-5 transition hover:-translate-y-1 hover:border-mint-300/34"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-mint-300">Product Type</p>
+                      <h3 className="mt-3 text-2xl font-black leading-tight text-white">{group.primary.shortName}</h3>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-mint-300/24 bg-mint-300/10 px-3 py-1 text-xs font-black text-mint-200">
+                      {group.productCount} 款
+                    </span>
+                  </div>
+                  <p className="mt-3 min-h-12 text-sm leading-6 text-aura/62">
+                    {group.primary.description || "按产品形态进入，继续选择下方小类可更快缩小范围。"}
+                  </p>
+                  <Link
+                    href={`/products/category/${group.primary.slug}`}
+                    className="focus-ring mt-5 inline-flex w-full items-center justify-center rounded-full border border-white/12 px-4 py-2.5 text-sm font-black text-white/82 transition hover:bg-white/8 hover:text-white"
+                  >
+                    查看全部
+                  </Link>
+                  {group.subcategories.length > 0 ? (
+                    <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+                      {group.subcategories.map((subcategory) => (
+                        <Link
+                          key={subcategory.id}
+                          href={`/products/category/${subcategory.slug}`}
+                          className="focus-ring rounded-full border border-white/12 px-3 py-1.5 text-xs font-bold text-aura/72 transition hover:border-mint-300/40 hover:bg-mint-300/10 hover:text-mint-100"
+                        >
+                          {subcategory.shortName}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-8 rounded-[26px] border border-white/10 bg-plum-950/50 p-6 text-sm leading-7 text-aura/68">
+              分类内容正在整理中，可先从产品中心查看已发布商品。
+            </div>
+          )}
         </div>
       </section>
 
