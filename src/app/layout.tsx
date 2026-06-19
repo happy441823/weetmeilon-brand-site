@@ -36,6 +36,13 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: PRIMARY_SITE_URL
+  },
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" }
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }]
   }
 };
 
