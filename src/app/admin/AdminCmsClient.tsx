@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 type Field = {
   name: string;
@@ -34,6 +35,14 @@ type AdminRoleState = {
   roles: string[];
   assignableRoles: string[];
   user?: Record<string, unknown>;
+};
+
+type ProductLookupOption = {
+  id: string;
+  name: string;
+  level?: string;
+  parent_id?: string;
+  is_active?: boolean | number;
 };
 
 const preferredResources = [
@@ -78,6 +87,25 @@ export function buildAdminSavePayload(resource: string, form: Record<string, unk
   return Object.fromEntries(Object.entries(form).filter(([key]) => !workflowManagedClientFields.has(key)));
 }
 
+const adminPathResources = [
+  { path: "/admin/products", resource: "products" },
+  { path: "/admin/articles", resource: "articles" },
+  { path: "/admin/pages", resource: "pages" },
+  { path: "/admin/homepage", resource: "homepage_sections" },
+  { path: "/admin/faqs", resource: "faqs" },
+  { path: "/admin/navigation", resource: "navigation_items" },
+  { path: "/admin/footer", resource: "footer_items" },
+  { path: "/admin/imports", resource: "import_jobs" },
+  { path: "/admin/seo/indexing", resource: "seo_push_logs" }
+];
+
+const adminResourcePaths = new Map(adminPathResources.map((item) => [item.resource, item.path]));
+
+export function resourceFromAdminPath(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, "") || "/admin";
+  return adminPathResources.find((item) => normalized === item.path || normalized.startsWith(`${item.path}/`))?.resource;
+}
+
 function emptyValue(field: Field) {
   if (field.type === "boolean") return false;
   if (field.type === "number") return 0;
@@ -91,14 +119,63 @@ function displayValue(value: unknown) {
   return String(value);
 }
 
+const thumbnailResources = new Set(["products", "media_assets"]);
+
+function resourceHasThumbnail(resource: string) {
+  return thumbnailResources.has(resource);
+}
+
+function rowThumbnailUrl(resource: string, row?: Record<string, unknown> | null) {
+  if (!row) return "";
+  if (resource === "products") return String(row._thumbnail_url || "");
+  if (resource === "media_assets") return String(row.public_url || "");
+  return "";
+}
+
+function rowThumbnailAlt(row?: Record<string, unknown> | null) {
+  if (!row) return "";
+  return String(row._thumbnail_alt || row.alt || row.title || row.name || row.file_name || "CMS image");
+}
+
+function isImageRow(row?: Record<string, unknown> | null) {
+  if (!row) return false;
+  const mime = String(row.mime_type || "");
+  const url = String(row.public_url || row._thumbnail_url || "");
+  return mime.startsWith("image/") || /\.(avif|gif|jpe?g|png|webp|svg)(\?|#|$)/i.test(url);
+}
+
+function AdminThumbnail({ url, alt, size = "sm", muted = false }: { url: string; alt: string; size?: "sm" | "lg"; muted?: boolean }) {
+  const boxClass = size === "lg" ? "h-40 w-full" : "h-16 w-16";
+  if (!url) {
+    return (
+      <div className={`${boxClass} grid place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-[10px] font-black uppercase tracking-[0.14em] text-white/34`}>
+        No image
+      </div>
+    );
+  }
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className={`${boxClass} group block overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]`}>
+      <img
+        src={url}
+        alt={alt}
+        loading="lazy"
+        className={`h-full w-full object-cover transition group-hover:scale-105 ${muted ? "opacity-60" : ""}`}
+      />
+    </a>
+  );
+}
+
 function readError(error: unknown) {
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
 }
 
 export function AdminCmsClient({ initialResource = "dashboard", initialItemId = "" }: { initialResource?: string; initialItemId?: string } = {}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const pathResource = resourceFromAdminPath(pathname || "");
   const [schema, setSchema] = useState<SchemaResponse | null>(null);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
-  const [resource, setResource] = useState(initialResource);
+  const [resource, setResource] = useState(pathResource || initialResource);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
@@ -109,6 +186,13 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   const [isPending, startTransition] = useTransition();
 
   const config = resource !== "dashboard" && resource !== "backup" ? schema?.resources[resource] : null;
+
+  useEffect(() => {
+    const nextResource = resourceFromAdminPath(pathname || "");
+    if (nextResource) {
+      setResource(nextResource);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     async function loadSchema() {
@@ -189,6 +273,14 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
 
   function setField(name: string, value: unknown) {
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function selectResource(nextResource: string) {
+    setResource(nextResource);
+    const nextPath = adminResourcePaths.get(nextResource);
+    if (nextPath && nextPath !== (pathname || "").replace(/\/+$/, "")) {
+      router.push(nextPath);
+    }
   }
 
   async function save() {
@@ -315,7 +407,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   const statusOptions = useMemo(() => config?.fields.find((field) => field.name === "status")?.options || [], [config]);
 
   return (
-    <main className="min-h-screen bg-[#09000f] text-white">
+    <main data-admin-shell className="min-h-screen bg-[#09000f] text-white">
       <div className="grid min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="border-r border-white/10 bg-[#12031d] px-5 py-6">
           <div className="mb-8">
@@ -332,7 +424,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                     <button
                       key={item.resource}
                       type="button"
-                      onClick={() => setResource(item.resource)}
+                      onClick={() => selectResource(item.resource)}
                       className={`rounded-lg px-3 py-2 text-left text-sm font-bold transition ${
                         resource === item.resource ? "bg-mint-300 text-[#12031d]" : "text-white/70 hover:bg-white/8 hover:text-white"
                       }`}
@@ -391,6 +483,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                   <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left text-sm">
                     <thead>
                       <tr className="text-white/48">
+                        {resourceHasThumbnail(resource) ? <th className="border-b border-white/10 px-3 py-3 font-black">图片</th> : null}
                         {config.listColumns.map((column) => <th key={column} className="border-b border-white/10 px-3 py-3 font-black">{column}</th>)}
                         <th className="border-b border-white/10 px-3 py-3 font-black">操作</th>
                       </tr>
@@ -398,6 +491,17 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                     <tbody>
                       {rows.map((row) => (
                         <tr key={resourceItemKey(row, config)} className="text-white/78">
+                          {resourceHasThumbnail(resource) ? (
+                            <td className="border-b border-white/8 px-3 py-3 align-middle">
+                              {isImageRow(row) || resource === "products" ? (
+                                <AdminThumbnail url={rowThumbnailUrl(resource, row)} alt={rowThumbnailAlt(row)} />
+                              ) : (
+                                <div className="grid h-16 w-16 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-[10px] font-black uppercase text-white/34">
+                                  File
+                                </div>
+                              )}
+                            </td>
+                          ) : null}
                           {config.listColumns.map((column) => <td key={column} className="border-b border-white/8 px-3 py-3">{displayValue(row[column])}</td>)}
                           <td className="border-b border-white/8 px-3 py-3">
                             <button type="button" onClick={() => editRow(row)} className="rounded-full border border-mint-300/35 px-3 py-1 text-xs font-black text-mint-300 hover:bg-mint-300/10">编辑</button>
@@ -405,7 +509,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                         </tr>
                       ))}
                       {rows.length === 0 ? (
-                        <tr><td colSpan={config.listColumns.length + 1} className="px-3 py-10 text-center text-white/45">暂无数据。请先执行 D1 migration 和数据迁移脚本。</td></tr>
+                        <tr><td colSpan={config.listColumns.length + (resourceHasThumbnail(resource) ? 2 : 1)} className="px-3 py-10 text-center text-white/45">暂无数据。请先执行 D1 migration 和数据迁移脚本。</td></tr>
                       ) : null}
                     </tbody>
                   </table>
@@ -418,13 +522,23 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                   <button type="button" onClick={resetForm} className="rounded-full border border-white/12 px-3 py-1 text-xs font-bold text-white/70 hover:bg-white/8">清空</button>
                 </div>
                 {resource === "products" ? (
-                  <ProductEditorPanel form={form} fields={config.fields} setField={setField} />
+                  <ProductEditorPanel form={form} fields={config.fields} setField={setField} thumbnailUrl={rowThumbnailUrl(resource, selected)} thumbnailAlt={rowThumbnailAlt(selected)} />
                 ) : resource === "articles" ? (
                   <ArticleEditorPanel form={form} fields={config.fields} setField={setField} />
                 ) : resource === "pages" || resource === "homepage_sections" ? (
                   <ModuleEditorPanel resource={resource} form={form} fields={config.fields} setField={setField} />
                 ) : (
                   <div className="grid gap-3">
+                    {resource === "media_assets" ? (
+                      <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                        <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-mint-300">Image Preview</p>
+                        {isImageRow(selected || form) ? (
+                          <AdminThumbnail url={rowThumbnailUrl(resource, selected || form)} alt={rowThumbnailAlt(selected || form)} size="lg" />
+                        ) : (
+                          <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-6 text-sm text-white/45">当前素材不是图片，或还没有公开 URL。</div>
+                        )}
+                      </div>
+                    ) : null}
                     {config.fields.map((field) => (
                       <label key={field.name} className="grid gap-1.5">
                         <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
@@ -494,17 +608,37 @@ function fieldByName(fields: Field[], name: string) {
   return fields.find((field) => field.name === name);
 }
 
+function optionLabel(option?: ProductLookupOption, fallback = "") {
+  if (!option) return fallback;
+  const inactive = option.is_active === 0 || option.is_active === false ? "（已停用）" : "";
+  return `${option.name}${inactive}`;
+}
+
+function ensureCurrentOption(options: ProductLookupOption[], allOptions: ProductLookupOption[], currentId: string) {
+  if (!currentId || options.some((option) => option.id === currentId)) {
+    return options;
+  }
+  const current = allOptions.find((option) => option.id === currentId);
+  return current ? [current, ...options] : [{ id: currentId, name: `当前值：${currentId}`, is_active: false }, ...options];
+}
+
 function ProductEditorPanel({
   form,
   fields,
-  setField
+  setField,
+  thumbnailUrl,
+  thumbnailAlt
 }: {
   form: Record<string, unknown>;
   fields: Field[];
   setField: (name: string, value: unknown) => void;
+  thumbnailUrl?: string;
+  thumbnailAlt?: string;
 }) {
   const [preview, setPreview] = useState<"desktop" | "mobile">("desktop");
-  const [contentMode, setContentMode] = useState<"copy" | "media" | "seo">("copy");
+  const [contentMode, setContentMode] = useState<"quick" | "copy" | "media" | "seo">("quick");
+  const [lookups, setLookups] = useState<{ categories: ProductLookupOption[]; series: ProductLookupOption[] }>({ categories: [], series: [] });
+  const [lookupMessage, setLookupMessage] = useState("");
 
   useEffect(() => {
     const key = `sweetmeilon_product_draft_${String(form.slug || "new")}`;
@@ -520,9 +654,56 @@ function ProductEditorPanel({
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadLookups() {
+      try {
+        const [categoriesResponse, seriesResponse] = await Promise.all([
+          fetch("/api/admin/resource/categories?pageSize=100", { cache: "no-store" }),
+          fetch("/api/admin/resource/product_series?pageSize=100", { cache: "no-store" })
+        ]);
+        if (!categoriesResponse.ok || !seriesResponse.ok) {
+          throw new Error("无法读取分类或系列选项。");
+        }
+        const [categoriesData, seriesData] = await Promise.all([categoriesResponse.json(), seriesResponse.json()]);
+        if (!cancelled) {
+          setLookups({
+            categories: (categoriesData.rows || []) as ProductLookupOption[],
+            series: (seriesData.rows || []) as ProductLookupOption[]
+          });
+          setLookupMessage("");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLookupMessage(readError(error));
+        }
+      }
+    }
+    void loadLookups();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function renderField(name: string) {
     const field = fieldByName(fields, name);
     if (!field) return null;
+    if (name === "primary_category_id") {
+      return renderLookupField(field, primaryCategoryOptions, "请选择一级分类", (value) => {
+        setField(name, value);
+        const currentSubcategory = String(form.subcategory_id || "");
+        const currentSubcategoryOption = lookups.categories.find((category) => category.id === currentSubcategory);
+        if (currentSubcategoryOption?.parent_id && currentSubcategoryOption.parent_id !== value) {
+          setField("subcategory_id", "");
+        }
+      });
+    }
+    if (name === "subcategory_id") {
+      return renderLookupField(field, subcategoryOptions, "请选择二级分类");
+    }
+    if (name === "series_id") {
+      return renderLookupField(field, seriesOptions, "请选择产品系列");
+    }
     return (
       <label key={name} className="grid gap-1.5">
         <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
@@ -539,6 +720,38 @@ function ProductEditorPanel({
   const summary = String(form.summary || form.subtitle || "商品摘要会显示在产品中心和详情页。");
   const slug = String(form.slug || "");
   const publicPath = slug ? `/products/${slug}` : "/products";
+  const activeCategoryId = String(form.primary_category_id || "");
+  const primaryCategories = lookups.categories.filter((category) => category.level === "primary");
+  const secondaryCategories = lookups.categories.filter((category) => category.level === "secondary");
+  const primaryCategoryOptions = ensureCurrentOption(primaryCategories, lookups.categories, activeCategoryId);
+  const subcategoryOptions = ensureCurrentOption(
+    secondaryCategories.filter((category) => !activeCategoryId || category.parent_id === activeCategoryId),
+    lookups.categories,
+    String(form.subcategory_id || "")
+  );
+  const seriesOptions = ensureCurrentOption(lookups.series, lookups.series, String(form.series_id || ""));
+  const selectedPrimaryLabel = optionLabel(lookups.categories.find((category) => category.id === activeCategoryId), "产品");
+  const selectedSubcategoryLabel = optionLabel(lookups.categories.find((category) => category.id === String(form.subcategory_id || "")), "");
+
+  function renderLookupField(field: Field, options: ProductLookupOption[], placeholder: string, onChange?: (value: string) => void) {
+    return (
+      <label key={field.name} className="grid gap-1.5">
+        <span className="text-xs font-black text-white/58">{field.label.replace(" ID", "")}{field.required ? " *" : ""}</span>
+        <select
+          value={String(form[field.name] || "")}
+          onChange={(event) => (onChange || ((value) => setField(field.name, value)))(event.target.value)}
+          className="h-10 rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none focus:border-mint-300/60"
+        >
+          <option value="">{placeholder}</option>
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>
+              {optionLabel(option)}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
 
   return (
     <div className="grid gap-4">
@@ -549,15 +762,21 @@ function ProductEditorPanel({
             官网预览
           </a>
         </div>
+        <p className="text-sm leading-6 text-white/56">先填写名称、Slug 和状态；其余常用上架项在“快速上架”里完成，复杂字段放在后面的标签。</p>
         {renderGroup(["name", "short_name"])}
         {renderGroup(["slug", "subtitle"])}
-        {renderGroup(["primary_category_id", "subcategory_id", "series_id"], "md:grid-cols-3")}
         {renderGroup(["status", "sort_order"], "md:grid-cols-2")}
-        {renderField("summary")}
       </section>
 
       <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setContentMode("quick")}
+            className={`rounded-full px-3 py-1 text-xs font-black ${contentMode === "quick" ? "bg-mint-300 text-[#12031d]" : "border border-white/12 text-white/68"}`}
+          >
+            快速上架
+          </button>
           {[
             ["copy", "内容"],
             ["media", "图片"],
@@ -573,6 +792,20 @@ function ProductEditorPanel({
             </button>
           ))}
         </div>
+
+        {contentMode === "quick" ? (
+          <div className="grid gap-3">
+            <div className="rounded-lg border border-mint-300/20 bg-mint-300/8 px-3 py-2 text-xs font-bold leading-6 text-mint-100">
+              最少填写：商品名称、Slug、分类、摘要、购买链接和开关。需要完整详情时再切到“内容 / 图片 / SEO”。
+            </div>
+            {lookupMessage ? <div className="rounded-lg border border-red-300/25 bg-red-300/10 px-3 py-2 text-xs font-bold text-red-100">{lookupMessage}</div> : null}
+            {renderGroup(["primary_category_id", "subcategory_id", "series_id"], "md:grid-cols-3")}
+            {renderField("summary")}
+            {renderGroup(["tmall_url", "jd_url"], "md:grid-cols-2")}
+            {renderGroup(["tmall_enabled", "jd_enabled", "buy_button_enabled"], "md:grid-cols-3")}
+            {renderGroup(["featured", "visible_home", "visible_catalog", "indexable"], "md:grid-cols-4")}
+          </div>
+        ) : null}
 
         {contentMode === "copy" ? (
           <div className="grid gap-3">
@@ -615,7 +848,14 @@ function ProductEditorPanel({
           </div>
         </div>
         <article className={`rounded-xl border border-white/10 bg-[#100019] p-4 ${preview === "mobile" ? "max-w-[320px]" : ""}`}>
-          <p className="text-xs font-black text-mint-300">{String(form.primary_category_id || "产品")}</p>
+          {thumbnailUrl ? (
+            <div className="mb-4">
+              <AdminThumbnail url={thumbnailUrl} alt={thumbnailAlt || title} size="lg" />
+            </div>
+          ) : null}
+          <p className="text-xs font-black text-mint-300">
+            {[selectedPrimaryLabel, selectedSubcategoryLabel].filter(Boolean).join(" / ") || "产品"}
+          </p>
           <h4 className="mt-2 text-xl font-black text-white">{title}</h4>
           <p className="mt-2 text-sm leading-6 text-white/60">{summary}</p>
           <div className="mt-4 grid gap-2 text-xs text-white/52">
