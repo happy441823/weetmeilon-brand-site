@@ -74,11 +74,75 @@ function parseJsonArray<T>(value: unknown, fallback: T[] = []) {
   }
 }
 
+function normalizeProductCategories(row: ProductRow) {
+  const currentPrimary = row.primary_category_id || "other";
+  const currentSubcategory = row.subcategory_id || null;
+  const text = `${row.slug} ${row.name} ${row.short_name || ""} ${row.subtitle || ""}`.toLowerCase();
+
+  if (
+    [
+      "tpe-mold",
+      "silicone-mold",
+      "realistic-dolls",
+      "masturbator-cups"
+    ].includes(currentPrimary)
+  ) {
+    return {
+      primaryCategoryId: currentPrimary,
+      subcategoryId: currentSubcategory
+    };
+  }
+
+  const material = text.includes("silicone") || text.includes("硅胶") ? "silicone" : "tpe";
+  const primaryCategoryId = material === "silicone" ? "silicone-mold" : "tpe-mold";
+
+  if (currentPrimary === "hip-lower-body" || text.includes("hip") || text.includes("臀")) {
+    return {
+      primaryCategoryId,
+      subcategoryId: material === "silicone" ? "silicone-hip-mold" : "tpe-hip-mold"
+    };
+  }
+
+  if (currentPrimary === "local-mold" || text.includes("breast") || text.includes("名器") || text.includes("局部")) {
+    return {
+      primaryCategoryId,
+      subcategoryId: material === "silicone" ? "silicone-local-mold" : "tpe-local-mold"
+    };
+  }
+
+  if (text.includes("leg") || text.includes("腿")) {
+    return {
+      primaryCategoryId,
+      subcategoryId: material === "silicone" ? "silicone-leg-mold" : "tpe-leg-mold"
+    };
+  }
+
+  if (currentPrimary === "care-accessories") {
+    return {
+      primaryCategoryId: "masturbator-cups",
+      subcategoryId: null
+    };
+  }
+
+  if (currentPrimary === "half-body" || text.includes("half-body") || text.includes("半身")) {
+    return {
+      primaryCategoryId,
+      subcategoryId: material === "silicone" ? "silicone-half-body" : "tpe-half-body"
+    };
+  }
+
+  return {
+    primaryCategoryId: currentPrimary,
+    subcategoryId: currentSubcategory
+  };
+}
+
 function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): PublicCatalogProduct {
   const upcoming = row.status === "coming_soon";
   const displayName = row.name;
   const summary = row.summary || row.subtitle || displayName;
   const channelEnabled = !upcoming && row.buy_button_enabled !== 0;
+  const categories = normalizeProductCategories(row);
   const sortedMedia = [...media].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
   const cover = sortedMedia.find((item) => item.image_type === "cover" && item.public_url) || sortedMedia.find((item) => item.public_url);
   const gallery = sortedMedia.map((item) => item.public_url).filter((url): url is string => Boolean(url));
@@ -87,9 +151,9 @@ function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): Public
     slug: row.slug,
     displayName,
     shortName: row.short_name || displayName,
-    categoryId: row.primary_category_id || "other",
-    primaryCategoryId: row.primary_category_id || "other",
-    subcategoryId: row.subcategory_id || null,
+    categoryId: categories.primaryCategoryId,
+    primaryCategoryId: categories.primaryCategoryId,
+    subcategoryId: categories.subcategoryId,
     seriesId: row.series_id || null,
     publicTags: [],
     status: upcoming ? "upcoming" : "active",

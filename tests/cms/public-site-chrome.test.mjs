@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import { getPublicFooterLinks, getPublicHeaderNavItems } from "../../src/lib/cms/public-site-chrome.ts";
 import { setCmsBindingsForTest } from "../../src/lib/cms/env.ts";
@@ -32,7 +32,7 @@ function mockChromeD1({ nav = [], groups = [], footer = [], fail = false } = {})
   };
 }
 
-test("public header navigation reads visible D1 links and filters unsafe paths", async () => {
+test("public header navigation reads visible D1 links, filters unsafe paths, and fills missing defaults", async () => {
   await withPublicD1(
     mockChromeD1({
       nav: [
@@ -44,17 +44,23 @@ test("public header navigation reads visible D1 links and filters unsafe paths",
     }),
     async () => {
       const items = await getPublicHeaderNavItems();
-      assert.deepEqual(items, [{ label: "品牌", href: "/brand", showDesktop: true, showMobile: true }]);
+      assert.deepEqual(items[0], { label: "品牌", href: "/brand", showDesktop: true, showMobile: true });
+      assert.ok(items.some((item) => item.href === "/material"));
+      assert.ok(items.some((item) => item.href === "/guide"));
+      assert.equal(items.some((item) => item.href.startsWith("/admin") || item.href.startsWith("/api")), false);
+      assert.equal(items.some((item) => item.href.startsWith("https://")), false);
     }
   );
 });
 
-test("public header navigation does not fall back when D1 returns an empty set", async () => {
+test("public header navigation fills empty D1 rows with stable default links", async () => {
   await withPublicD1(mockChromeD1({ nav: [] }), async () => {
-    assert.deepEqual(await getPublicHeaderNavItems(), []);
+    const items = await getPublicHeaderNavItems();
+    assert.ok(items.length > 0);
+    assert.ok(items.some((item) => item.href === "/products"));
+    assert.ok(items.some((item) => item.href === "/articles"));
   });
 });
-
 test("public footer reads D1 items in visible groups", async () => {
   await withPublicD1(
     mockChromeD1({

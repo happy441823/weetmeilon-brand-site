@@ -542,7 +542,7 @@ function ProductEditorPanel({
   setField: (name: string, value: unknown) => void;
 }) {
   const [preview, setPreview] = useState<"desktop" | "mobile">("desktop");
-  const [contentMode, setContentMode] = useState<"copy" | "media" | "seo">("copy");
+  const [contentMode, setContentMode] = useState<"quick" | "copy" | "media" | "seo">("quick");
 
   useEffect(() => {
     const key = `sweetmeilon_product_draft_${String(form.slug || "new")}`;
@@ -587,15 +587,21 @@ function ProductEditorPanel({
             官网预览
           </a>
         </div>
+        <p className="text-sm leading-6 text-white/56">先填写名称、Slug 和状态；其余常用上架项在“快速上架”里完成，复杂字段放在后面的标签。</p>
         {renderGroup(["name", "short_name"])}
         {renderGroup(["slug", "subtitle"])}
-        {renderGroup(["primary_category_id", "subcategory_id", "series_id"], "md:grid-cols-3")}
         {renderGroup(["status", "sort_order"], "md:grid-cols-2")}
-        {renderField("summary")}
       </section>
 
       <section className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setContentMode("quick")}
+            className={`rounded-full px-3 py-1 text-xs font-black ${contentMode === "quick" ? "bg-mint-300 text-[#12031d]" : "border border-white/12 text-white/68"}`}
+          >
+            快速上架
+          </button>
           {[
             ["copy", "内容"],
             ["media", "图片"],
@@ -611,6 +617,19 @@ function ProductEditorPanel({
             </button>
           ))}
         </div>
+
+        {contentMode === "quick" ? (
+          <div className="grid gap-3">
+            <div className="rounded-lg border border-mint-300/20 bg-mint-300/8 px-3 py-2 text-xs font-bold leading-6 text-mint-100">
+              最少填写：商品名称、Slug、分类、摘要、购买链接和开关。需要完整详情时再切到“内容 / 图片 / SEO”。
+            </div>
+            {renderGroup(["primary_category_id", "subcategory_id", "series_id"], "md:grid-cols-3")}
+            {renderField("summary")}
+            {renderGroup(["tmall_url", "jd_url"], "md:grid-cols-2")}
+            {renderGroup(["tmall_enabled", "jd_enabled", "buy_button_enabled"], "md:grid-cols-3")}
+            {renderGroup(["featured", "visible_home", "visible_catalog", "indexable"], "md:grid-cols-4")}
+          </div>
+        ) : null}
 
         {contentMode === "copy" ? (
           <div className="grid gap-3">

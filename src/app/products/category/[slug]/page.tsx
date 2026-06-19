@@ -3,17 +3,16 @@ import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreButtons } from "@/components/StoreButtons";
-import {
-  getCategoryBySlug,
-  getPublicCatalogProducts,
-  getProductsByCategory
-} from "@/lib/catalog";
-import { catalogCategories } from "@/lib/catalog";
+import { catalogCategories, getCategoryBySlug, getPublicCatalogProducts, getProductsByCategory } from "@/lib/catalog";
+import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback } from "@/lib/cms/public-products";
 import { canonicalPath } from "@/lib/seo";
 
 type CategoryPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export function generateStaticParams() {
   const publicProducts = getPublicCatalogProducts();
@@ -28,7 +27,8 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const category = getCategoryBySlug(slug);
+  const categories = await getPublicCategoriesWithCmsFallback();
+  const category = categories.find((item) => item.slug === slug) || getCategoryBySlug(slug);
 
   if (!category) {
     return {};
@@ -45,13 +45,20 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;
-  const category = getCategoryBySlug(slug);
+  const [categories, publicProducts] = await Promise.all([
+    getPublicCategoriesWithCmsFallback(),
+    getPublicProductsWithCmsFallback()
+  ]);
+  const category = categories.find((item) => item.slug === slug) || getCategoryBySlug(slug);
 
   if (!category || !category.visible || category.level === "legacy") {
     notFound();
   }
 
-  const products = getProductsByCategory(category.id);
+  const products =
+    publicProducts.length > 0
+      ? publicProducts.filter((product) => product.primaryCategoryId === category.id || product.subcategoryId === category.id)
+      : getProductsByCategory(category.id);
 
   if (products.length === 0) {
     notFound();
