@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type Field = {
   name: string;
@@ -91,6 +91,8 @@ const adminPathResources = [
   { path: "/admin/seo/indexing", resource: "seo_push_logs" }
 ];
 
+const adminResourcePaths = new Map(adminPathResources.map((item) => [item.resource, item.path]));
+
 export function resourceFromAdminPath(pathname: string) {
   const normalized = pathname.replace(/\/+$/, "") || "/admin";
   return adminPathResources.find((item) => normalized === item.path || normalized.startsWith(`${item.path}/`))?.resource;
@@ -115,6 +117,7 @@ function readError(error: unknown) {
 
 export function AdminCmsClient({ initialResource = "dashboard", initialItemId = "" }: { initialResource?: string; initialItemId?: string } = {}) {
   const pathname = usePathname();
+  const router = useRouter();
   const pathResource = resourceFromAdminPath(pathname || "");
   const [schema, setSchema] = useState<SchemaResponse | null>(null);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
@@ -216,6 +219,14 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
 
   function setField(name: string, value: unknown) {
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function selectResource(nextResource: string) {
+    setResource(nextResource);
+    const nextPath = adminResourcePaths.get(nextResource);
+    if (nextPath && nextPath !== (pathname || "").replace(/\/+$/, "")) {
+      router.push(nextPath);
+    }
   }
 
   async function save() {
@@ -359,7 +370,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                     <button
                       key={item.resource}
                       type="button"
-                      onClick={() => setResource(item.resource)}
+                      onClick={() => selectResource(item.resource)}
                       className={`rounded-lg px-3 py-2 text-left text-sm font-bold transition ${
                         resource === item.resource ? "bg-mint-300 text-[#12031d]" : "text-white/70 hover:bg-white/8 hover:text-white"
                       }`}

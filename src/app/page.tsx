@@ -8,7 +8,93 @@ import { TrackView } from "@/components/TrackView";
 import { TrustStrip } from "@/components/TrustStrip";
 import { BRAND, complianceNote, trustPoints } from "@/lib/constants";
 import { getPublishedArticles } from "@/lib/articles";
+import { readPublicCmsRows } from "@/lib/cms/public-content";
 import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback } from "@/lib/cms/public-products";
+
+type HomepageSectionRow = {
+  id: string;
+  section_key: string;
+  title: string;
+  description?: string | null;
+  section_type?: string | null;
+  config_json?: string | null;
+  sort_order?: number | null;
+};
+
+type HomepageSectionConfig = {
+  eyebrow?: string;
+  linkLabel?: string;
+  href?: string;
+  items?: { title?: string; description?: string; href?: string }[];
+};
+
+function parseHomepageConfig(value: string | null | undefined): HomepageSectionConfig {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" ? (parsed as HomepageSectionConfig) : {};
+  } catch {
+    return {};
+  }
+}
+
+async function getHomepageSections() {
+  const result = await readPublicCmsRows<HomepageSectionRow>("homepage_sections");
+  return result.source === "d1" ? result.rows : [];
+}
+
+function CmsHomepageSections({ sections }: { sections: HomepageSectionRow[] }) {
+  if (sections.length === 0) return null;
+
+  return (
+    <section className="bg-white/[0.025] py-14 md:py-20">
+      <div className="container-shell grid gap-8">
+        {sections.map((section) => {
+          const config = parseHomepageConfig(section.config_json);
+          const items = Array.isArray(config.items) ? config.items : [];
+          return (
+            <div key={section.id || section.section_key} className="grid gap-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <SectionHeader
+                  eyebrow={config.eyebrow || section.section_type || "Homepage"}
+                  title={section.title}
+                  description={section.description || ""}
+                />
+                {config.href && config.linkLabel ? (
+                  <Link href={config.href} className="focus-ring inline-flex items-center gap-1 rounded-full border border-white/12 px-4 py-3 text-sm font-bold text-aura/80 transition hover:bg-white/8 hover:text-white">
+                    {config.linkLabel}
+                    <span aria-hidden>→</span>
+                  </Link>
+                ) : null}
+              </div>
+              {items.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  {items.map((item, index) => {
+                    const content = (
+                      <>
+                        <h3 className="text-xl font-black leading-snug text-white">{item.title || `Item ${index + 1}`}</h3>
+                        {item.description ? <p className="mt-3 text-sm leading-7 text-aura/62">{item.description}</p> : null}
+                      </>
+                    );
+                    return item.href ? (
+                      <Link key={`${section.id}-${index}`} href={item.href} className="rounded-[26px] border border-white/10 bg-plum-950/48 p-5 transition hover:-translate-y-1 hover:border-mint-300/34">
+                        {content}
+                      </Link>
+                    ) : (
+                      <div key={`${section.id}-${index}`} className="rounded-[26px] border border-white/10 bg-plum-950/48 p-5">
+                        {content}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 const concernCards = [
   {
@@ -33,10 +119,11 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const [products, visibleCategories, homeArticles] = await Promise.all([
+  const [products, visibleCategories, homeArticles, homepageSections] = await Promise.all([
     getPublicProductsWithCmsFallback(),
     getPublicCategoriesWithCmsFallback(),
-    getPublishedArticles()
+    getPublishedArticles(),
+    getHomepageSections()
   ]);
   const upcomingProducts = products.filter((product) => product.status === "upcoming" && product.featured).slice(0, 3);
   const activeProducts = products.filter((product) => product.status === "active" && product.featured).slice(0, 4);
@@ -86,6 +173,8 @@ export default async function HomePage() {
       </section>
 
       <TrustStrip />
+
+      <CmsHomepageSections sections={homepageSections} />
 
       <section className="container-shell py-14 md:py-20">
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
