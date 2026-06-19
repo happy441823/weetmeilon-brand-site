@@ -53,9 +53,26 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const isUpcoming = product.status === "upcoming";
   const series = await getPublicSeriesWithCmsFallback();
   const seriesName = series.find((item) => item.id === product.seriesId)?.name || "蜜女郎精选";
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.displayName,
+    description: product.seoDescription,
+    image: product.coverImage,
+    brand: {
+      "@type": "Brand",
+      name: "蜜女郎 SWEETMEILON"
+    },
+    category: seriesName,
+    url: canonicalPath(`/products/${product.slug}`)
+  };
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c") }}
+      />
       <TrackView
         event={isUpcoming ? "view_upcoming_product" : "view_product"}
         params={{ product_slug: product.slug, product_name: product.displayName, product_status: product.status }}

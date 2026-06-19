@@ -12,8 +12,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/tpe-mold.png",
     sortOrder: 10,
     visible: true,
-    seoTitle: "TPE倒模产品｜蜜女郎",
-    seoDescription: "蜜女郎TPE倒模产品分类，用于按材质和产品类型了解商品信息，具体规格以官方旗舰店页面为准。"
+    seoTitle: "TPE倒模｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎TPE倒模相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "silicone-mold",
@@ -26,8 +26,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/silicone-mold.png",
     sortOrder: 20,
     visible: true,
-    seoTitle: "硅胶倒模产品｜蜜女郎",
-    seoDescription: "蜜女郎硅胶倒模产品分类，帮助用户按材质与形态了解产品，具体商品信息以官方旗舰店页面为准。"
+    seoTitle: "硅胶倒模｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎硅胶倒模相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "realistic-dolls",
@@ -40,8 +40,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/realistic-dolls.png",
     sortOrder: 30,
     visible: true,
-    seoTitle: "实体娃娃产品｜蜜女郎",
-    seoDescription: "蜜女郎实体娃娃分类，按材质方向整理商品信息，具体款式与规则以官方旗舰店页面为准。"
+    seoTitle: "实体娃娃｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎实体娃娃相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "masturbator-cups",
@@ -54,8 +54,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/masturbator-cups.png",
     sortOrder: 40,
     visible: true,
-    seoTitle: "飞机杯系列｜蜜女郎",
-    seoDescription: "蜜女郎飞机杯系列分类页，整理相关产品信息与官方渠道入口，具体商品以旗舰店页面为准。"
+    seoTitle: "飞机杯系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎飞机杯系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "tpe-hip-mold",
@@ -68,8 +68,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/tpe-hip-mold.png",
     sortOrder: 110,
     visible: true,
-    seoTitle: "TPE臀模系列｜蜜女郎",
-    seoDescription: "蜜女郎TPE臀模系列分类页，具体商品材质、规格与购买规则以官方旗舰店页面为准。"
+    seoTitle: "TPE臀模系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎TPE臀模系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "tpe-half-body",
@@ -82,8 +82,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/tpe-half-body.png",
     sortOrder: 120,
     visible: true,
-    seoTitle: "TPE半身系列｜蜜女郎",
-    seoDescription: "蜜女郎TPE半身系列分类页，帮助用户按材质和形态了解商品，具体信息以旗舰店页面为准。"
+    seoTitle: "TPE半身系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎TPE半身系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "tpe-local-mold",
@@ -96,8 +96,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/tpe-local-mold.png",
     sortOrder: 130,
     visible: true,
-    seoTitle: "TPE名器系列｜蜜女郎",
-    seoDescription: "蜜女郎TPE名器系列分类页，具体商品说明、清洁与售后以官方旗舰店页面为准。"
+    seoTitle: "TPE名器系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎TPE名器系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "tpe-leg-mold",
@@ -110,8 +110,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/tpe-leg-mold.png",
     sortOrder: 140,
     visible: true,
-    seoTitle: "TPE腿模系列｜蜜女郎",
-    seoDescription: "蜜女郎TPE腿模系列分类页，具体材质、规格和购买信息以官方旗舰店页面为准。"
+    seoTitle: "TPE腿模系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎TPE腿模系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "tpe-chest-mold",
@@ -124,8 +124,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/tpe-chest-mold.png",
     sortOrder: 150,
     visible: true,
-    seoTitle: "TPE胸模系列｜蜜女郎",
-    seoDescription: "蜜女郎TPE胸模系列分类页，克制展示商品信息，具体规则以官方旗舰店页面为准。"
+    seoTitle: "TPE胸模系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎TPE胸模系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "silicone-hip-mold",
@@ -138,8 +138,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/silicone-hip-mold.png",
     sortOrder: 210,
     visible: true,
-    seoTitle: "硅胶臀模系列｜蜜女郎",
-    seoDescription: "蜜女郎硅胶臀模系列分类页，具体商品材质、规格与购买规则以官方旗舰店页面为准。"
+    seoTitle: "硅胶臀模系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎硅胶臀模系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "silicone-half-body",
@@ -152,8 +152,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/silicone-half-body.png",
     sortOrder: 220,
     visible: true,
-    seoTitle: "硅胶半身系列｜蜜女郎",
-    seoDescription: "蜜女郎硅胶半身系列分类页，帮助用户按材质和形态了解商品，具体信息以旗舰店页面为准。"
+    seoTitle: "硅胶半身系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎硅胶半身系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "silicone-local-mold",
@@ -166,8 +166,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/silicone-local-mold.png",
     sortOrder: 230,
     visible: true,
-    seoTitle: "硅胶名器系列｜蜜女郎",
-    seoDescription: "蜜女郎硅胶名器系列分类页，具体商品说明、清洁与售后以官方旗舰店页面为准。"
+    seoTitle: "硅胶名器系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎硅胶名器系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "silicone-leg-mold",
@@ -180,8 +180,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/silicone-leg-mold.png",
     sortOrder: 240,
     visible: true,
-    seoTitle: "硅胶腿模系列｜蜜女郎",
-    seoDescription: "蜜女郎硅胶腿模系列分类页，具体材质、规格和购买信息以官方旗舰店页面为准。"
+    seoTitle: "硅胶腿模系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎硅胶腿模系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "silicone-chest-mold",
@@ -194,8 +194,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/silicone-chest-mold.png",
     sortOrder: 250,
     visible: true,
-    seoTitle: "硅胶胸模系列｜蜜女郎",
-    seoDescription: "蜜女郎硅胶胸模系列分类页，克制展示商品信息，具体规则以官方旗舰店页面为准。"
+    seoTitle: "硅胶胸模系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎硅胶胸模系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "tpe-realistic-dolls",
@@ -208,8 +208,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/tpe-realistic-dolls.png",
     sortOrder: 310,
     visible: true,
-    seoTitle: "TPE实体娃娃｜蜜女郎",
-    seoDescription: "蜜女郎TPE实体娃娃分类页，商品信息、配送与售后规则以官方旗舰店页面为准。"
+    seoTitle: "TPE实体娃娃｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎TPE实体娃娃相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "silicone-realistic-dolls",
@@ -222,8 +222,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/silicone-realistic-dolls.png",
     sortOrder: 320,
     visible: true,
-    seoTitle: "硅胶实体娃娃｜蜜女郎",
-    seoDescription: "蜜女郎硅胶实体娃娃分类页，商品信息、配送与售后规则以官方旗舰店页面为准。"
+    seoTitle: "硅胶实体娃娃｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎硅胶实体娃娃相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "half-body",
@@ -236,8 +236,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/half-body.png",
     sortOrder: 910,
     visible: false,
-    seoTitle: "半身系列｜蜜女郎",
-    seoDescription: "历史分类，仅用于数据迁移。"
+    seoTitle: "半身系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎半身系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "hip-lower-body",
@@ -250,8 +250,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/hip-lower-body.png",
     sortOrder: 920,
     visible: false,
-    seoTitle: "臀部与下半身系列｜蜜女郎",
-    seoDescription: "历史分类，仅用于数据迁移。"
+    seoTitle: "臀部与下半身系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎臀部与下半身系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "local-mold",
@@ -264,8 +264,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/local-mold.png",
     sortOrder: 930,
     visible: false,
-    seoTitle: "局部系列｜蜜女郎",
-    seoDescription: "历史分类，仅用于数据迁移。"
+    seoTitle: "局部系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎局部系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "wearable",
@@ -278,8 +278,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/wearable.png",
     sortOrder: 940,
     visible: false,
-    seoTitle: "穿戴与服饰系列｜蜜女郎",
-    seoDescription: "历史分类，仅用于数据迁移。"
+    seoTitle: "穿戴与服饰系列｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎穿戴与服饰系列相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "care-accessories",
@@ -292,8 +292,8 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/care-accessories.png",
     sortOrder: 950,
     visible: false,
-    seoTitle: "清洁护理与配件｜蜜女郎",
-    seoDescription: "内部护理配件分类，暂不进入主导航。"
+    seoTitle: "清洁护理与配件｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎清洁护理与配件相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   },
   {
     id: "other",
@@ -306,7 +306,7 @@ export const catalogCategories: CatalogCategory[] = [
     coverImage: "/images/categories/other.png",
     sortOrder: 990,
     visible: false,
-    seoTitle: "其他产品｜蜜女郎",
-    seoDescription: "历史兜底分类，仅用于数据迁移。"
+    seoTitle: "其他产品｜产品类型与官方渠道说明｜蜜女郎",
+    seoDescription: "浏览蜜女郎其他产品相关产品，了解材质体验、清洁保养、隐私购买与官方旗舰店购买入口。具体商品信息以官方渠道页面为准。"
   }
 ];

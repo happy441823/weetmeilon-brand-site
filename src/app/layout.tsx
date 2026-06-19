@@ -10,11 +10,11 @@ import { BRAND, PRIMARY_SITE_URL } from "@/lib/constants";
 export const metadata: Metadata = {
   metadataBase: new URL(PRIMARY_SITE_URL),
   title: {
-    default: `${BRAND.name}｜官方品牌站`,
+    default: "蜜女郎 SWEETMEILON 官方品牌站｜材质、隐私购买与清洁指南",
     template: `%s｜${BRAND.name}`
   },
   description:
-    "蜜女郎官方品牌站，介绍高质感硅胶产品、原生肌凝硅材质体验、隐私发货说明与清洁保养指南，可前往天猫或京东官方旗舰店购买。",
+    "蜜女郎官方品牌站，提供产品系列、材质体验、隐私购买、清洁保养与官方旗舰店购买入口说明，帮助成年人购买前了解更清楚。",
   keywords: [
     "蜜女郎",
     "天猫蜜女郎旗舰店",
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
     "官方旗舰店"
   ],
   openGraph: {
-    title: `${BRAND.name}｜官方品牌站`,
-    description: "真实质感，从材质开始。官方旗舰店、隐私发货、品质硅胶产品。",
+    title: "蜜女郎 SWEETMEILON 官方品牌站｜材质、隐私购买与清洁指南",
+    description: "蜜女郎官方品牌站，提供产品系列、材质体验、隐私购买、清洁保养与官方旗舰店购买入口说明。",
     url: PRIMARY_SITE_URL,
     siteName: BRAND.name,
     locale: "zh_CN",
