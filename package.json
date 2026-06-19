@@ -14,6 +14,7 @@
     "cms:seed": "tsx scripts/cms-seed-from-static.mjs",
     "cms:bootstrap-admin": "node scripts/cms-bootstrap-admin.mjs",
     "cms:backup": "node scripts/cms-backup-local.mjs",
+    "cms:register-public-images": "node scripts/cms-register-public-images.mjs",
     "test": "tsx --test tests/cms/*.test.mjs",
     "test:e2e": "node scripts/e2e-smoke.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
