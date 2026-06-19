@@ -60,7 +60,10 @@ function quote(name: string) {
   return `"${name.replace(/"/g, "")}"`;
 }
 
-export function publicD1Enabled() {
+export function publicD1Enabled(resource?: string) {
+  if (resource === "products" && process.env.CMS_PUBLIC_PRODUCTS_D1_READS === "true") {
+    return true;
+  }
   return process.env.CMS_PUBLIC_D1_READS === "true";
 }
 
@@ -99,7 +102,7 @@ export async function readPublicCmsRows<T extends Record<string, unknown>>(
   resource: keyof typeof tableByResource,
   options: PublicReadOptions = {}
 ): Promise<PublicReadResult<T>> {
-  if (!publicD1Enabled()) {
+  if (!publicD1Enabled(resource)) {
     return { rows: [], dbReady: false, source: "fallback", fallbackReason: "feature_disabled" };
   }
 

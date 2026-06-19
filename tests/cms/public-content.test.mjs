@@ -9,11 +9,52 @@ import { setCmsBindingsForTest } from "../../src/lib/cms/env.ts";
 
 test("public D1 reads are feature flagged", () => {
   const old = process.env.CMS_PUBLIC_D1_READS;
+  const oldProducts = process.env.CMS_PUBLIC_PRODUCTS_D1_READS;
   process.env.CMS_PUBLIC_D1_READS = "false";
+  delete process.env.CMS_PUBLIC_PRODUCTS_D1_READS;
   assert.equal(publicD1Enabled(), false);
+  assert.equal(publicD1Enabled("products"), false);
+  process.env.CMS_PUBLIC_PRODUCTS_D1_READS = "true";
+  assert.equal(publicD1Enabled(), false);
+  assert.equal(publicD1Enabled("products"), true);
+  assert.equal(publicD1Enabled("navigation_items"), false);
+  delete process.env.CMS_PUBLIC_PRODUCTS_D1_READS;
   process.env.CMS_PUBLIC_D1_READS = "true";
   assert.equal(publicD1Enabled(), true);
   process.env.CMS_PUBLIC_D1_READS = old;
+  process.env.CMS_PUBLIC_PRODUCTS_D1_READS = oldProducts;
+});
+
+test("public product D1 reads can be enabled without enabling global public D1 reads", async () => {
+  const old = process.env.CMS_PUBLIC_D1_READS;
+  const oldProducts = process.env.CMS_PUBLIC_PRODUCTS_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "false";
+  process.env.CMS_PUBLIC_PRODUCTS_D1_READS = "true";
+  setCmsBindingsForTest({
+    CMS_DB: {
+      prepare(sql) {
+        return {
+          bind() {
+            return this;
+          },
+          async all() {
+            if (/FROM "products"/.test(sql)) return { results: [{ slug: "d1-product", status: "published" }], success: true, meta: {} };
+            return { results: [], success: true, meta: {} };
+          }
+        };
+      }
+    }
+  });
+
+  const products = await readPublicCmsRows("products");
+  const nav = await readPublicCmsRows("navigation_items");
+  assert.equal(products.source, "d1");
+  assert.equal(products.rows[0].slug, "d1-product");
+  assert.deepEqual(nav, { rows: [], dbReady: false, source: "fallback", fallbackReason: "feature_disabled" });
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = old;
+  process.env.CMS_PUBLIC_PRODUCTS_D1_READS = oldProducts;
 });
 
 test("public visibility where clause excludes drafts, pending review, offline, archived and future scheduled content", () => {
