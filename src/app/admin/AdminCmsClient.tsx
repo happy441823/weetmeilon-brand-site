@@ -37,6 +37,14 @@ type AdminRoleState = {
   user?: Record<string, unknown>;
 };
 
+type ProductLookupOption = {
+  id: string;
+  name: string;
+  level?: string;
+  parent_id?: string;
+  is_active?: boolean | number;
+};
+
 const preferredResources = [
   "products",
   "articles",
@@ -600,6 +608,20 @@ function fieldByName(fields: Field[], name: string) {
   return fields.find((field) => field.name === name);
 }
 
+function optionLabel(option?: ProductLookupOption, fallback = "") {
+  if (!option) return fallback;
+  const inactive = option.is_active === 0 || option.is_active === false ? "（已停用）" : "";
+  return `${option.name}${inactive}`;
+}
+
+function ensureCurrentOption(options: ProductLookupOption[], allOptions: ProductLookupOption[], currentId: string) {
+  if (!currentId || options.some((option) => option.id === currentId)) {
+    return options;
+  }
+  const current = allOptions.find((option) => option.id === currentId);
+  return current ? [current, ...options] : [{ id: currentId, name: `当前值：${currentId}`, is_active: false }, ...options];
+}
+
 function ProductEditorPanel({
   form,
   fields,
@@ -615,6 +637,8 @@ function ProductEditorPanel({
 }) {
   const [preview, setPreview] = useState<"desktop" | "mobile">("desktop");
   const [contentMode, setContentMode] = useState<"quick" | "copy" | "media" | "seo">("quick");
+  const [lookups, setLookups] = useState<{ categories: ProductLookupOption[]; series: ProductLookupOption[] }>({ categories: [], series: [] });
+  const [lookupMessage, setLookupMessage] = useState("");
 
   useEffect(() => {
     const key = `sweetmeilon_product_draft_${String(form.slug || "new")}`;
@@ -630,9 +654,56 @@ function ProductEditorPanel({
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadLookups() {
+      try {
+        const [categoriesResponse, seriesResponse] = await Promise.all([
+          fetch("/api/admin/resource/categories?pageSize=100", { cache: "no-store" }),
+          fetch("/api/admin/resource/product_series?pageSize=100", { cache: "no-store" })
+        ]);
+        if (!categoriesResponse.ok || !seriesResponse.ok) {
+          throw new Error("无法读取分类或系列选项。");
+        }
+        const [categoriesData, seriesData] = await Promise.all([categoriesResponse.json(), seriesResponse.json()]);
+        if (!cancelled) {
+          setLookups({
+            categories: (categoriesData.rows || []) as ProductLookupOption[],
+            series: (seriesData.rows || []) as ProductLookupOption[]
+          });
+          setLookupMessage("");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLookupMessage(readError(error));
+        }
+      }
+    }
+    void loadLookups();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function renderField(name: string) {
     const field = fieldByName(fields, name);
     if (!field) return null;
+    if (name === "primary_category_id") {
+      return renderLookupField(field, primaryCategoryOptions, "请选择一级分类", (value) => {
+        setField(name, value);
+        const currentSubcategory = String(form.subcategory_id || "");
+        const currentSubcategoryOption = lookups.categories.find((category) => category.id === currentSubcategory);
+        if (currentSubcategoryOption?.parent_id && currentSubcategoryOption.parent_id !== value) {
+          setField("subcategory_id", "");
+        }
+      });
+    }
+    if (name === "subcategory_id") {
+      return renderLookupField(field, subcategoryOptions, "请选择二级分类");
+    }
+    if (name === "series_id") {
+      return renderLookupField(field, seriesOptions, "请选择产品系列");
+    }
     return (
       <label key={name} className="grid gap-1.5">
         <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
@@ -649,6 +720,38 @@ function ProductEditorPanel({
   const summary = String(form.summary || form.subtitle || "商品摘要会显示在产品中心和详情页。");
   const slug = String(form.slug || "");
   const publicPath = slug ? `/products/${slug}` : "/products";
+  const activeCategoryId = String(form.primary_category_id || "");
+  const primaryCategories = lookups.categories.filter((category) => category.level === "primary");
+  const secondaryCategories = lookups.categories.filter((category) => category.level === "secondary");
+  const primaryCategoryOptions = ensureCurrentOption(primaryCategories, lookups.categories, activeCategoryId);
+  const subcategoryOptions = ensureCurrentOption(
+    secondaryCategories.filter((category) => !activeCategoryId || category.parent_id === activeCategoryId),
+    lookups.categories,
+    String(form.subcategory_id || "")
+  );
+  const seriesOptions = ensureCurrentOption(lookups.series, lookups.series, String(form.series_id || ""));
+  const selectedPrimaryLabel = optionLabel(lookups.categories.find((category) => category.id === activeCategoryId), "产品");
+  const selectedSubcategoryLabel = optionLabel(lookups.categories.find((category) => category.id === String(form.subcategory_id || "")), "");
+
+  function renderLookupField(field: Field, options: ProductLookupOption[], placeholder: string, onChange?: (value: string) => void) {
+    return (
+      <label key={field.name} className="grid gap-1.5">
+        <span className="text-xs font-black text-white/58">{field.label.replace(" ID", "")}{field.required ? " *" : ""}</span>
+        <select
+          value={String(form[field.name] || "")}
+          onChange={(event) => (onChange || ((value) => setField(field.name, value)))(event.target.value)}
+          className="h-10 rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none focus:border-mint-300/60"
+        >
+          <option value="">{placeholder}</option>
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>
+              {optionLabel(option)}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
 
   return (
     <div className="grid gap-4">
@@ -695,6 +798,7 @@ function ProductEditorPanel({
             <div className="rounded-lg border border-mint-300/20 bg-mint-300/8 px-3 py-2 text-xs font-bold leading-6 text-mint-100">
               最少填写：商品名称、Slug、分类、摘要、购买链接和开关。需要完整详情时再切到“内容 / 图片 / SEO”。
             </div>
+            {lookupMessage ? <div className="rounded-lg border border-red-300/25 bg-red-300/10 px-3 py-2 text-xs font-bold text-red-100">{lookupMessage}</div> : null}
             {renderGroup(["primary_category_id", "subcategory_id", "series_id"], "md:grid-cols-3")}
             {renderField("summary")}
             {renderGroup(["tmall_url", "jd_url"], "md:grid-cols-2")}
@@ -749,7 +853,9 @@ function ProductEditorPanel({
               <AdminThumbnail url={thumbnailUrl} alt={thumbnailAlt || title} size="lg" />
             </div>
           ) : null}
-          <p className="text-xs font-black text-mint-300">{String(form.primary_category_id || "产品")}</p>
+          <p className="text-xs font-black text-mint-300">
+            {[selectedPrimaryLabel, selectedSubcategoryLabel].filter(Boolean).join(" / ") || "产品"}
+          </p>
           <h4 className="mt-2 text-xl font-black text-white">{title}</h4>
           <p className="mt-2 text-sm leading-6 text-white/60">{summary}</p>
           <div className="mt-4 grid gap-2 text-xs text-white/52">
