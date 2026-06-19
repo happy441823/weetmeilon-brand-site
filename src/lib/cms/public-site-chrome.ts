@@ -39,8 +39,11 @@ export async function getPublicHeaderNavItems(): Promise<PublicChromeLink[]> {
     return fallback;
   }
   const d1Links = result.rows.map(rowToChromeLink).filter((item): item is PublicChromeLink => Boolean(item));
-  const hrefs = new Set(d1Links.map((item) => item.href));
-  return [...d1Links, ...fallback.filter((item) => !hrefs.has(item.href))];
+  const d1ByHref = new Map(d1Links.map((item) => [item.href, item]));
+  const fallbackHrefs = new Set(fallback.map((item) => item.href));
+  const orderedLinks = fallback.map((item) => d1ByHref.get(item.href) || item);
+  const customLinks = d1Links.filter((item) => item.href !== "/" && !fallbackHrefs.has(item.href));
+  return [...orderedLinks, ...customLinks];
 }
 
 export async function getPublicFooterLinks(): Promise<PublicChromeLink[]> {

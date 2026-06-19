@@ -32,10 +32,12 @@ function mockChromeD1({ nav = [], groups = [], footer = [], fail = false } = {})
   };
 }
 
-test("public header navigation reads visible D1 links, filters unsafe paths, and fills missing defaults", async () => {
+test("public header navigation keeps the stable brand order while applying safe D1 overrides", async () => {
   await withPublicD1(
     mockChromeD1({
       nav: [
+        { label: "文章", href: "/articles", show_desktop: 1, show_mobile: 1 },
+        { label: "首页", href: "/", show_desktop: 1, show_mobile: 1 },
         { label: "品牌", href: "/brand", show_desktop: 1, show_mobile: 1 },
         { label: "后台", href: "/admin", show_desktop: 1, show_mobile: 1 },
         { label: "API", href: "/api/admin/test", show_desktop: 1, show_mobile: 1 },
@@ -45,10 +47,19 @@ test("public header navigation reads visible D1 links, filters unsafe paths, and
     async () => {
       const items = await getPublicHeaderNavItems();
       assert.deepEqual(items[0], { label: "品牌", href: "/brand", showDesktop: true, showMobile: true });
-      assert.ok(items.some((item) => item.href === "/material"));
-      assert.ok(items.some((item) => item.href === "/guide"));
+      assert.deepEqual(items.map((item) => item.href).slice(0, 7), [
+        "/brand",
+        "/products",
+        "/material",
+        "/guide",
+        "/privacy-shipping",
+        "/faq",
+        "/articles"
+      ]);
+      assert.equal(items.find((item) => item.href === "/articles")?.label, "文章");
       assert.equal(items.some((item) => item.href.startsWith("/admin") || item.href.startsWith("/api")), false);
       assert.equal(items.some((item) => item.href.startsWith("https://")), false);
+      assert.equal(items.some((item) => item.href === "/"), false);
     }
   );
 });
