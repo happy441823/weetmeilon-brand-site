@@ -39,10 +39,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icon.png?v=brand-2", type: "image/png", sizes: "192x192" },
-      { url: "/favicon-32x32.png?v=brand-2", type: "image/png", sizes: "32x32" }
+      { url: "/icon.png?v=brand-3", type: "image/png", sizes: "192x192" },
+      { url: "/favicon-32x32.png?v=brand-3", type: "image/png", sizes: "32x32" }
     ],
-    apple: [{ url: "/apple-icon.png?v=brand-2", type: "image/png", sizes: "180x180" }]
+    apple: [{ url: "/apple-icon.png?v=brand-3", type: "image/png", sizes: "180x180" }]
   }
 };
 
