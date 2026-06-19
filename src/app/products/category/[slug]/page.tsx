@@ -34,6 +34,17 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     return {};
   }
 
+  if (!category.visible || category.level === "legacy") {
+    return {
+      title: category.seoTitle,
+      description: category.seoDescription,
+      robots: {
+        index: false,
+        follow: false
+      }
+    };
+  }
+
   return {
     title: category.seoTitle,
     description: category.seoDescription,

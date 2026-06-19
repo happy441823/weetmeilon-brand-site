@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = withCanonical({
-  title: "产品中心",
-  description: "蜜女郎产品中心：按一级类目、二级小类、产品系列与关键词筛选商品。"
+  title: "蜜女郎产品中心｜按材质、类型与系列了解官方商品",
+  description: "在蜜女郎产品中心按材质、类型、系列与商品状态浏览产品，了解清洁保养、隐私购买与官方旗舰店购买入口。"
 }, "/products");
 
 export default async function ProductsPage() {

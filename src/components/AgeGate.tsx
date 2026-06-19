@@ -48,7 +48,7 @@ export function AgeGate() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/90 px-4 backdrop-blur-xl">
+    <div data-nosnippet className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/90 px-4 backdrop-blur-xl">
       <div
         role="dialog"
         aria-modal="true"

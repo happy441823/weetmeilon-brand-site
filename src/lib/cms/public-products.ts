@@ -1,5 +1,13 @@
 import { catalogCategories, catalogSeries, getPublicCatalogProductBySlug, getPublicCatalogProducts } from "@/lib/catalog";
 import type { CatalogCategory, CatalogSeries, PublicCatalogProduct } from "@/types/catalog";
+import {
+  categorySeoDescription,
+  categorySeoTitle,
+  publicProductDisplayName,
+  publicProductSeoDescription,
+  publicProductSeoTitle,
+  safePublicSpecifications
+} from "@/lib/public-seo-copy";
 import { getCmsDb } from "./env";
 import { readPublicCmsRows } from "./public-content";
 
@@ -76,7 +84,19 @@ function parseJsonArray<T>(value: unknown, fallback: T[] = []) {
 
 function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): PublicCatalogProduct {
   const upcoming = row.status === "coming_soon";
-  const displayName = row.name;
+  const categoryName = catalogCategories.find((item) => item.id === row.primary_category_id)?.name;
+  const subcategoryName = catalogCategories.find((item) => item.id === row.subcategory_id)?.name;
+  const seriesName = catalogSeries.find((item) => item.id === row.series_id)?.name;
+  const displayName = publicProductDisplayName({
+    id: row.id,
+    displayName: row.name,
+    name: row.name,
+    shortName: row.short_name,
+    status: row.status,
+    seriesName,
+    categoryName,
+    subcategoryName
+  });
   const summary = row.summary || row.subtitle || displayName;
   const channelEnabled = !upcoming && row.buy_button_enabled !== 0;
   const sortedMedia = [...media].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
@@ -103,7 +123,7 @@ function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): Public
     fullDescription: row.body_html || summary,
     heroLine: row.subtitle || summary,
     highlights: parseJsonArray<string>(row.highlights_json, summary ? [summary] : []),
-    publicSpecifications: parseJsonArray<{ label: string; value: string }>(row.specifications_json),
+    publicSpecifications: safePublicSpecifications(parseJsonArray<{ label: string; value: string }>(row.specifications_json), row.status),
     careNotes: row.care_notes ? [row.care_notes] : [],
     privacyNotes: row.privacy_notes ? [row.privacy_notes] : [],
     channelLinks: {
@@ -124,8 +144,8 @@ function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): Public
         lastCheckedAt: null
       }
     },
-    seoTitle: row.seo_title || displayName,
-    seoDescription: row.seo_description || summary,
+    seoTitle: publicProductSeoTitle({ displayName, status: row.status, seriesName, categoryName, subcategoryName }),
+    seoDescription: publicProductSeoDescription({ displayName, status: row.status, seriesName, categoryName, subcategoryName }),
     seoKeywords: [],
     updatedAt: row.updated_at || new Date(0).toISOString()
   };
@@ -167,8 +187,8 @@ function toCategory(row: CategoryRow): CatalogCategory {
     coverImage: "",
     sortOrder: Number(row.sort_order || 0),
     visible: row.is_active !== 0,
-    seoTitle: row.seo_title || row.name,
-    seoDescription: row.seo_description || ""
+    seoTitle: categorySeoTitle(row.name),
+    seoDescription: categorySeoDescription(row.name)
   };
 }
 

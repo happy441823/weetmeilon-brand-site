@@ -1,15 +1,31 @@
-import { catalogCategories } from "@/data/catalog/categories";
+import { catalogCategories as rawCatalogCategories } from "@/data/catalog/categories";
 import generatedProductOverrides from "@/data/catalog/generated-overrides.json";
 import { manualProductOverrides } from "@/data/catalog/manual-overrides";
 import { baseCatalogProducts } from "@/data/catalog/products";
 import { catalogSeries } from "@/data/catalog/series";
 import type { CatalogChannelLink, CatalogProduct, ProductStatus, PublicCatalogProduct, StoreChannel } from "@/types/catalog";
+import {
+  categorySeoDescription,
+  categorySeoTitle,
+  publicProductDisplayName,
+  publicProductSeoDescription,
+  publicProductSeoTitle,
+  safePublicSpecifications,
+  safePublicTags,
+  safeSeoKeywords
+} from "@/lib/public-seo-copy";
 
 const publicStatuses: ProductStatus[] = ["active", "upcoming"];
 type CatalogProductOverride = Partial<Omit<CatalogProduct, "channelLinks">> & {
   channelLinks?: Partial<Record<StoreChannel, Partial<CatalogChannelLink>>>;
 };
 const generatedOverrides = generatedProductOverrides as unknown as Record<string, CatalogProductOverride>;
+
+export const catalogCategories = rawCatalogCategories.map((category) => ({
+  ...category,
+  seoTitle: categorySeoTitle(category.name),
+  seoDescription: categorySeoDescription(category.name)
+}));
 
 function mergeProductOverride(product: CatalogProduct, override: CatalogProductOverride | undefined): CatalogProduct {
   if (!override) {
@@ -147,28 +163,33 @@ function publicLinkSet(product: CatalogProduct) {
 
 function publicTags(product: CatalogProduct) {
   if (product.status === "upcoming") {
-    return product.tags.slice(0, 3);
+    return safePublicTags(product.tags).slice(0, 3);
   }
 
-  const blocked = /官方立减|已降|付款|销量|优惠|活动|天猫|京东|商品ID|审核|待补|同步|抓取/;
-  return product.tags.filter((tag) => !blocked.test(tag)).slice(0, 2);
+  return safePublicTags(product.tags);
 }
 
 function publicSpecifications(product: CatalogProduct) {
-  if (product.status === "upcoming") {
-    return product.specifications.filter((spec) => !/价格|库存|销量|评价/.test(spec.label));
-  }
-
-  const allowed = /材质|尺寸|重量|颜色|包含|清洁|收纳|商品状态/;
-  const blocked = /商品ID|官网分类|付款|价格|销量|库存|活动|优惠|天猫|京东|抓取|同步/;
-  return product.specifications.filter((spec) => allowed.test(spec.label) && !blocked.test(spec.label));
+  return safePublicSpecifications(product.specifications, product.status);
 }
 
 function toPublicProduct(product: CatalogProduct): PublicCatalogProduct {
-  const displayName = product.displayName || product.name;
   const isUpcoming = product.status === "upcoming";
+  const seriesName = getSeriesById(product.seriesId)?.name;
+  const categoryName = getCategoryById(product.primaryCategoryId || product.categoryId)?.name;
+  const subcategoryName = getCategoryById(product.subcategoryId || "")?.name;
+  const displayName = publicProductDisplayName({
+    id: product.id,
+    displayName: product.displayName,
+    name: product.name,
+    shortName: product.shortName,
+    status: product.status,
+    seriesName,
+    categoryName,
+    subcategoryName
+  });
   const useReviewedContent = product.contentStatus === "ready" && product.manualReviewed === true;
-  const activeDescription = `${displayName}已确认官方渠道入口。具体规格、价格、库存、优惠和售后以官方旗舰店页面为准。`;
+  const activeDescription = `了解${displayName}的材质体验、产品类型、清洁保养与隐私购买说明。具体规格、价格、库存、优惠、物流和售后以蜜女郎官方旗舰店页面为准。`;
   const primaryCategoryId = product.primaryCategoryId || product.categoryId;
 
   return {
@@ -206,9 +227,9 @@ function toPublicProduct(product: CatalogProduct): PublicCatalogProduct {
           jd: { ...product.channelLinks.jd, enabled: false, url: null, verified: false }
         }
       : publicLinkSet(product),
-    seoTitle: isUpcoming ? product.seoTitle : `${displayName}｜蜜女郎官方在售商品`,
-    seoDescription: isUpcoming ? product.seoDescription : activeDescription,
-    seoKeywords: product.seoKeywords.filter((keyword) => !/^\d+$/.test(keyword)).slice(0, 6),
+    seoTitle: publicProductSeoTitle({ displayName, status: product.status, seriesName, categoryName, subcategoryName }),
+    seoDescription: publicProductSeoDescription({ displayName, status: product.status, seriesName, categoryName, subcategoryName }),
+    seoKeywords: safeSeoKeywords(product.seoKeywords),
     updatedAt: product.updatedAt
   };
 }
@@ -217,7 +238,7 @@ export const catalogProducts = baseCatalogProducts
   .map(applyOverrides)
   .sort((a, b) => a.sortOrder - b.sortOrder);
 
-export { catalogCategories, catalogSeries };
+export { catalogSeries };
 
 export function getPublicCatalogProducts(): PublicCatalogProduct[] {
   return catalogProducts.filter(isPublicProduct).map(toPublicProduct);

@@ -44,8 +44,30 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     notFound();
   }
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.description,
+    keywords: article.keywords.join(", "),
+    articleSection: article.category,
+    author: {
+      "@type": "Organization",
+      name: "蜜女郎 SWEETMEILON"
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "蜜女郎 SWEETMEILON"
+    },
+    mainEntityOfPage: canonicalPath(`/articles/${article.slug}`)
+  };
+
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd).replace(/</g, "\\u003c") }}
+      />
       <TrackView event="article_read" params={{ article_slug: article.slug, category: article.category }} />
       <article className="container-shell py-14 md:py-20">
         <div className="max-w-4xl">
