@@ -132,10 +132,10 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
 
   useEffect(() => {
     const nextResource = resourceFromAdminPath(pathname || "");
-    if (nextResource && nextResource !== resource) {
+    if (nextResource) {
       setResource(nextResource);
     }
-  }, [pathname, resource]);
+  }, [pathname]);
 
   useEffect(() => {
     async function loadSchema() {
