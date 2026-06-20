@@ -22,7 +22,7 @@ const emptyChannelLinks = {
 } as const;
 
 export const upcomingProductNotice =
-  "本页面为新品预告，具体名称、材质、规格、颜色、价格、上架时间及购买渠道，以蜜女郎天猫或京东官方旗舰店正式上架页面为准。";
+  "本页面为新品预告，具体名称、材质、规格、颜色、上架时间及购买渠道，以蜜女郎天猫或京东官方旗舰店正式上架页面为准。";
 
 const manualCatalogProducts: CatalogProduct[] = [
   {

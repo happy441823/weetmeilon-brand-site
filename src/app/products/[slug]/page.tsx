@@ -9,6 +9,7 @@ import { getPublicProductBySlugWithCmsFallback, getPublicSeriesWithCmsFallback }
 import {
   getPublicCatalogProducts
 } from "@/lib/catalog";
+import { publicProductSeoDescription } from "@/lib/public-seo-copy";
 import { canonicalPath } from "@/lib/seo";
 
 type ProductPageProps = {
@@ -31,10 +32,11 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   }
 
   const title = product.status === "upcoming" ? `${product.displayName}｜新品预告` : product.seoTitle;
+  const description = publicProductSeoDescription({ displayName: product.displayName, status: product.status });
 
   return {
     title,
-    description: product.seoDescription,
+    description,
     keywords: product.seoKeywords,
     alternates: {
       canonical: canonicalPath(`/products/${product.slug}`)
@@ -53,11 +55,12 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const isUpcoming = product.status === "upcoming";
   const series = await getPublicSeriesWithCmsFallback();
   const seriesName = series.find((item) => item.id === product.seriesId)?.name || "蜜女郎精选";
+  const safeDescription = publicProductSeoDescription({ displayName: product.displayName, status: product.status });
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.displayName,
-    description: product.seoDescription,
+    description: safeDescription,
     image: product.coverImage,
     brand: {
       "@type": "Brand",
@@ -117,8 +120,8 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           </div>
           <p className="mt-4 text-xs leading-6 text-aura/50">
             {isUpcoming
-              ? "本页面为新品预告，不展示价格、库存、上架时间或购买按钮。"
-              : "实际规格、价格、库存、优惠与发货规则，以天猫或京东官方旗舰店页面为准。"}
+              ? "本页面为新品预告，暂不展示购买按钮。正式商品信息以上架后的蜜女郎官方旗舰店页面为准。"
+              : "实际规格、发货规则与售后信息，以天猫或京东官方旗舰店页面为准。"}
           </p>
         </div>
       </section>
@@ -171,8 +174,8 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           <h2 className="text-3xl font-black text-white">{isUpcoming ? "正式上架前，先了解材质概念" : "确认同款信息，请前往官方旗舰店"}</h2>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-aura/68">
             {isUpcoming
-              ? "新品具体名称、材质、规格、颜色、价格、上架时间及购买渠道，以蜜女郎天猫或京东官方旗舰店正式上架页面为准。"
-              : "具体商品标题、规格、价格、库存、发货与售后信息，以天猫或京东官方旗舰店页面为准。"}
+              ? "本页为新品预告页面，暂不展示购买按钮。正式商品信息、发货与售后说明，请以上架后的蜜女郎官方旗舰店页面为准。"
+              : "具体商品标题、规格、发货与售后信息，以天猫或京东官方旗舰店页面为准。"}
           </p>
           <div className="mt-7">
             {isUpcoming ? (

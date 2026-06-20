@@ -16,7 +16,7 @@ export const highRiskSeoTerms = [
 ];
 
 const highRiskPattern = new RegExp(highRiskSeoTerms.join("|"), "i");
-const dynamicSalesPattern = /近\s*365\s*天付款|付款人数|销量|累计评价|销售数量|热销|爆款|官方立减|已降|平台活动|动态销量/;
+const dynamicSalesPattern = /近\s*365\s*天付款|付款人数|销量|累计评价|销售数量|热销|爆款|官方立减|已降|平台活动|动态销量|价格|库存|优惠/;
 const genericProductNamePattern = /^(半身倒模款|臀部倒模款|自动臀部倒模款|自动倒模款|半身款|臀部款)$/;
 
 type ProductSeoCopyInput = {
@@ -89,7 +89,7 @@ export function publicProductSeoDescription(input: ProductSeoCopyInput) {
   if (isUpcomingStatus(input.status)) {
     return `了解${name}的新品预告、材质体验方向、清洁保养与隐私购买说明。正式商品信息以上架后的蜜女郎官方旗舰店页面为准。`;
   }
-  return `了解${name}的材质体验、产品类型、清洁保养与隐私购买说明。具体规格、价格、库存、优惠、物流和售后以蜜女郎官方旗舰店页面为准。`;
+  return `了解${name}的产品类型、材质体验、清洁收纳与隐私购买说明。具体规格、发货和售后信息请以蜜女郎官方旗舰店页面为准。`;
 }
 
 export function publicComingSoonSpecifications() {

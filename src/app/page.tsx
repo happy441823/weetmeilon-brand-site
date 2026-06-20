@@ -10,6 +10,7 @@ import { BRAND, complianceNote, trustPoints } from "@/lib/constants";
 import { getPublishedArticles } from "@/lib/articles";
 import { readPublicCmsRows } from "@/lib/cms/public-content";
 import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback } from "@/lib/cms/public-products";
+import { pickHomeBrowseCategories } from "@/lib/home-categories";
 import type { CatalogCategory, PublicCatalogProduct } from "@/types/catalog";
 
 type HomepageSectionRow = {
@@ -142,12 +143,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const [products, visibleCategories, homeArticles, homepageSections] = await Promise.all([
+  const [products, categories, homeArticles, homepageSections] = await Promise.all([
     getPublicProductsWithCmsFallback(),
     getPublicCategoriesWithCmsFallback(),
     getPublishedArticles(),
     getHomepageSections()
   ]);
+  const visibleCategories = pickHomeBrowseCategories(categories);
   const upcomingProducts = products.filter((product) => product.status === "upcoming" && product.featured).slice(0, 3);
   const activeProducts = products.filter((product) => product.status === "active" && product.featured).slice(0, 4);
   const categoryGroups = buildCategoryBrowseGroups(visibleCategories, products);

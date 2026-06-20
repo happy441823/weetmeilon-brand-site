@@ -1,4 +1,4 @@
-import type { CatalogProduct } from "@/types/catalog";
+﻿import type { CatalogProduct } from "@/types/catalog";
 
 export const tmallLiveProducts: CatalogProduct[] = [
   {
@@ -236,7 +236,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "飞机杯男用腿模1比1真人实体倒模",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -350,7 +350,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "实体半身硅胶娃娃真人倒模真实阴道",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -464,7 +464,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "飞机杯男用下半身实体娃娃腿模仿真",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -916,7 +916,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "半身全腿娃娃飞机杯男用真人倒模可",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -1030,7 +1030,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "飞机杯硅胶实体半身娃娃可插入欧美",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -1255,7 +1255,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "飞机杯新款硅胶屁股倒模男用1比1",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "hip-lower-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "臀部倒模",
       "硅胶质感",
@@ -1483,7 +1483,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "硅胶半身倒模膜新款实体娃娃男用真",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -1597,7 +1597,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "飞机杯男用真人倒模膜实体半身娃娃",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -1939,7 +1939,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "液态乳房硅胶男用飞机杯真实可插入",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "local-mold",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "硅胶质感",
       "官方立减15%",
@@ -2048,7 +2048,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "半身倒模飞机杯重口味真人实体娃娃",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -2502,7 +2502,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "飞机杯真人倒模半身娃娃可插入实体",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -2616,7 +2616,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "蜜女郎重磅大屁股臀膜1比1真人复",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "臀部倒模",
@@ -2728,7 +2728,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "自动加热飞机杯真人复刻硅胶大屁股",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "自动款",
       "半身/下半身",
@@ -2954,7 +2954,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "全自动硅胶大大屁股倒模飞机杯1比",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "hip-lower-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "自动款",
       "臀部倒模",
@@ -3068,7 +3068,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "高端硅胶娃娃重口味可插入1比1真",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -3292,7 +3292,7 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "shortName": "半身飞机杯男用重口味真人倒模熟女",
     "subtitle": "天猫旗舰店在售商品，具体规格、价格和优惠以天猫商品页为准。",
     "categoryId": "half-body",
-    "seriesId": "native-skin-silicone",
+    "seriesId": "fine-texture",
     "tags": [
       "半身/下半身",
       "硅胶质感",
@@ -3399,3 +3399,4 @@ export const tmallLiveProducts: CatalogProduct[] = [
     "updatedAt": "2026-06-14T00:48:00+08:00"
   },
 ];
+
