@@ -59,6 +59,8 @@ const preferredResources = [
   "audit_logs"
 ];
 
+const adminBuildLabel = "CMS Production v2026.06.20";
+
 export const workflowManagedClientFields = new Set([
   "status",
   "published_at",
@@ -413,7 +415,8 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
           <div className="mb-8">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-mint-300">SWEETMEILON</p>
             <h1 className="mt-2 text-2xl font-black">品牌官网 CMS</h1>
-            <p className="mt-3 text-sm leading-6 text-white/56">Preview 阶段仅连接开发 D1/R2，不触碰生产数据。</p>
+            <p className="mt-3 text-sm leading-6 text-white/56">Production 后台已连接正式 CMS 资源，受 Cloudflare Access 保护。</p>
+            <p className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-mint-300/80">{adminBuildLabel}</p>
           </div>
           <nav className="grid gap-6">
             {(schema?.navigation || []).map((group) => (
@@ -442,6 +445,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
           <header className="mb-6 flex flex-col justify-between gap-4 border-b border-white/10 pb-5 md:flex-row md:items-end">
             <div>
               <p className="text-sm font-bold text-mint-300">Cloudflare Access 保护路径：/admin/* 与 /api/admin/*</p>
+              <p className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-white/36">{adminBuildLabel}</p>
               <h2 className="mt-2 text-3xl font-black md:text-4xl">{resource === "dashboard" ? "仪表盘" : resource === "backup" ? "导入导出与备份" : config?.labelPlural}</h2>
             </div>
             <a href="/" target="_blank" className="rounded-full border border-white/14 px-4 py-2 text-sm font-black text-white/76 hover:bg-white/8">
