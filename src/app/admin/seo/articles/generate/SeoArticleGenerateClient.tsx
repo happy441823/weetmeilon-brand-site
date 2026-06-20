@@ -23,7 +23,7 @@ export function SeoArticleGenerateClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#09000f] px-5 py-8 text-white md:px-10">
+    <main data-admin-shell className="min-h-screen bg-[#09000f] px-5 py-8 text-white md:px-10">
       <div className="mx-auto max-w-4xl rounded-xl border border-white/10 bg-white/[0.045] p-6">
         <p className="text-sm font-black text-mint-300">AI 文章生成</p>
         <h1 className="mt-2 text-3xl font-black">生成文章草稿</h1>

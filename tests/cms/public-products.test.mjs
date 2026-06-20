@@ -93,6 +93,38 @@ test("public products map per-product media public urls instead of one placehold
   process.env.CMS_PUBLIC_D1_READS = previous;
 });
 
+test("public products normalize legacy imported categories into the active taxonomy", async () => {
+  const previous = process.env.CMS_PUBLIC_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "true";
+  setCmsBindingsForTest({
+    CMS_DB: createPublicDb([
+      {
+        id: "legacy-half-body-silicone",
+        slug: "half-body-silicone-1000",
+        name: "半身倒模款",
+        status: "published",
+        primary_category_id: "half-body"
+      },
+      {
+        id: "legacy-hip-tpe",
+        slug: "hip-automatic-1001",
+        name: "自动臀部倒模款",
+        status: "published",
+        primary_category_id: "hip-lower-body"
+      }
+    ])
+  });
+
+  const products = await getPublicProductsWithCmsFallback();
+  assert.equal(products[0].primaryCategoryId, "silicone-mold");
+  assert.equal(products[0].subcategoryId, "silicone-half-body");
+  assert.equal(products[1].primaryCategoryId, "tpe-mold");
+  assert.equal(products[1].subcategoryId, "tpe-hip-mold");
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = previous;
+});
+
 test("public products do not fall back to static content when D1 returns an empty set", async () => {
   const previous = process.env.CMS_PUBLIC_D1_READS;
   process.env.CMS_PUBLIC_D1_READS = "true";

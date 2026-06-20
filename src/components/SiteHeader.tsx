@@ -41,7 +41,7 @@ export function SiteHeader({ items = navItems }: { items?: PublicChromeLink[] })
           </span>
         </Link>
         <nav className="hidden items-center gap-1 lg:flex" aria-label="主导航">
-          {items.filter((item) => item.showDesktop !== false).map((item) => (
+          {items.filter((item) => item.href !== "/" && item.showDesktop !== false).map((item) => (
             <Link key={item.href} href={item.href} className="focus-ring rounded-full px-3 py-2 text-sm font-semibold text-aura/72 transition hover:bg-white/8 hover:text-white">
               {item.label}
             </Link>

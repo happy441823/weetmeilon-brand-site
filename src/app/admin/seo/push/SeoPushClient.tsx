@@ -22,7 +22,7 @@ export function SeoPushClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#09000f] px-5 py-8 text-white md:px-10">
+    <main data-admin-shell className="min-h-screen bg-[#09000f] px-5 py-8 text-white md:px-10">
       <div className="mx-auto max-w-4xl rounded-xl border border-white/10 bg-white/[0.045] p-6">
         <p className="text-sm font-black text-mint-300">SEO 发布中心</p>
         <h1 className="mt-2 text-3xl font-black">搜索引擎推送记录</h1>

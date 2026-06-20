@@ -34,10 +34,16 @@ function rowToChromeLink(row: Record<string, unknown>): PublicChromeLink | null 
 
 export async function getPublicHeaderNavItems(): Promise<PublicChromeLink[]> {
   const result = await readPublicCmsRows<Record<string, unknown>>("navigation_items");
+  const fallback = navItems.map((item) => ({ ...item, showDesktop: true, showMobile: true }));
   if (result.source !== "d1") {
-    return navItems.map((item) => ({ ...item, showDesktop: true, showMobile: true }));
+    return fallback;
   }
-  return result.rows.map(rowToChromeLink).filter((item): item is PublicChromeLink => Boolean(item));
+  const d1Links = result.rows.map(rowToChromeLink).filter((item): item is PublicChromeLink => Boolean(item));
+  const d1ByHref = new Map(d1Links.map((item) => [item.href, item]));
+  const fallbackHrefs = new Set(fallback.map((item) => item.href));
+  const orderedLinks = fallback.map((item) => d1ByHref.get(item.href) || item);
+  const customLinks = d1Links.filter((item) => item.href !== "/" && !fallbackHrefs.has(item.href));
+  return [...orderedLinks, ...customLinks];
 }
 
 export async function getPublicFooterLinks(): Promise<PublicChromeLink[]> {

@@ -62,7 +62,7 @@ export function ImportNewClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#09000f] px-5 py-8 text-white md:px-10">
+    <main data-admin-shell className="min-h-screen bg-[#09000f] px-5 py-8 text-white md:px-10">
       <div className="mx-auto grid max-w-6xl gap-6">
         <header className="border-b border-white/10 pb-5">
           <p className="text-sm font-black text-mint-300">SWEETMEILON CMS</p>

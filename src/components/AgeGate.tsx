@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const STORAGE_KEY = "minvlang_age_confirmed_v1";
 const COOKIE_KEY = "minvlang_age_confirmed";
@@ -20,14 +21,20 @@ function isStoredConfirmationValid(value: string | null) {
 }
 
 export function AgeGate() {
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith("/admin");
   const [visible, setVisible] = useState(true);
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
   const declineButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    if (isAdminRoute) {
+      setVisible(false);
+      return;
+    }
     const hasCookie = document.cookie.split("; ").some((item) => item === `${COOKIE_KEY}=yes`);
     setVisible(!hasCookie && !isStoredConfirmationValid(window.localStorage.getItem(STORAGE_KEY)));
-  }, []);
+  }, [isAdminRoute]);
 
   useEffect(() => {
     if (!visible) {
@@ -43,7 +50,7 @@ export function AgeGate() {
     };
   }, [visible]);
 
-  if (!visible) {
+  if (isAdminRoute || !visible) {
     return null;
   }
 
