@@ -21,9 +21,8 @@ export default async function ProductsPage() {
     getPublicCategoriesWithCmsFallback(),
     getPublicSeriesWithCmsFallback()
   ]);
-  const productCategoryIds = new Set(publicProducts.flatMap((product) => [product.primaryCategoryId, product.subcategoryId].filter(Boolean)));
-  const primaryCategories = categories.filter((category) => category.visible && category.level === "primary" && productCategoryIds.has(category.id));
-  const subcategories = categories.filter((category) => category.visible && category.level === "secondary" && productCategoryIds.has(category.id));
+  const primaryCategories = categories.filter((category) => category.visible && category.level === "primary");
+  const subcategories = categories.filter((category) => category.visible && category.level === "secondary");
   const visibleSeries = series.filter((item) => item.visible);
 
   return (

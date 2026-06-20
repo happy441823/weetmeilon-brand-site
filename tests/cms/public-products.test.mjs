@@ -116,9 +116,9 @@ test("public products normalize legacy imported categories into the active taxon
   });
 
   const products = await getPublicProductsWithCmsFallback();
-  assert.equal(products[0].primaryCategoryId, "silicone-mold");
+  assert.equal(products[0].primaryCategoryId, "intimate-molds");
   assert.equal(products[0].subcategoryId, "silicone-half-body");
-  assert.equal(products[1].primaryCategoryId, "tpe-mold");
+  assert.equal(products[1].primaryCategoryId, "intimate-molds");
   assert.equal(products[1].subcategoryId, "tpe-hip-mold");
 
   setCmsBindingsForTest(null);
