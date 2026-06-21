@@ -173,11 +173,77 @@ function publicSpecifications(product: CatalogProduct) {
   return safePublicSpecifications(product.specifications, product.status);
 }
 
+function normalizeStaticCategory(product: CatalogProduct) {
+  const source = `${product.slug} ${product.displayName || product.name} ${product.shortName} ${product.categoryId} ${product.primaryCategoryId || ""} ${product.subcategoryId || ""}`.toLowerCase();
+  const material = source.includes("silicone") || source.includes("硅胶") ? "silicone" : "tpe";
+
+  if (product.primaryCategoryId === "realistic-dolls" || product.categoryId === "realistic-dolls") {
+    return {
+      primaryCategoryId: "realistic-dolls",
+      subcategoryId: material === "silicone" ? "silicone-realistic-dolls" : "tpe-realistic-dolls"
+    };
+  }
+
+  if (product.primaryCategoryId === "masturbator-cups" || product.categoryId === "masturbator-cups" || source.includes("飞机杯")) {
+    return {
+      primaryCategoryId: "masturbator-cups",
+      subcategoryId: "masturbator-cup"
+    };
+  }
+
+  if (source.includes("名器") || source.includes("local")) {
+    return {
+      primaryCategoryId: "intimate-molds",
+      subcategoryId: material === "silicone" ? "silicone-local-mold" : "tpe-local-mold"
+    };
+  }
+
+  if (source.includes("腿") || source.includes("leg")) {
+    return {
+      primaryCategoryId: "intimate-molds",
+      subcategoryId: "tpe-leg-mold"
+    };
+  }
+
+  if (source.includes("半身") || source.includes("half-body")) {
+    return {
+      primaryCategoryId: "intimate-molds",
+      subcategoryId: material === "silicone" ? "silicone-half-body" : "tpe-half-body"
+    };
+  }
+
+  if (source.includes("臀") || source.includes("hip")) {
+    return {
+      primaryCategoryId: "intimate-molds",
+      subcategoryId: material === "silicone" ? "silicone-hip-mold" : "tpe-hip-mold"
+    };
+  }
+
+  return {
+    primaryCategoryId: product.primaryCategoryId === "tpe-mold" || product.primaryCategoryId === "silicone-mold" ? "intimate-molds" : product.primaryCategoryId || product.categoryId,
+    subcategoryId: product.subcategoryId ?? null
+  };
+}
+
+function normalizeStaticSeries(product: CatalogProduct, category: { primaryCategoryId: string; subcategoryId: string | null }) {
+  if (category.primaryCategoryId === "masturbator-cups") return "masturbator-cup-series";
+  if (category.primaryCategoryId === "realistic-dolls") return "realistic-doll-series";
+  if (category.subcategoryId?.includes("half-body")) return "half-body-doll-series";
+  if (category.subcategoryId?.includes("hip")) return "hip-mold-series";
+  if (category.subcategoryId?.includes("silicone")) return "silicone-mold-series";
+  if (product.seriesId === "native-skin-silicone") return "silicone-mold-series";
+  if (product.seriesId === "fine-texture") return "hip-mold-series";
+  if (product.seriesId === "beginner") return "half-body-doll-series";
+  return product.seriesId;
+}
+
 function toPublicProduct(product: CatalogProduct): PublicCatalogProduct {
   const isUpcoming = product.status === "upcoming";
-  const seriesName = getSeriesById(product.seriesId)?.name;
-  const categoryName = getCategoryById(product.primaryCategoryId || product.categoryId)?.name;
-  const subcategoryName = getCategoryById(product.subcategoryId || "")?.name;
+  const normalizedCategory = normalizeStaticCategory(product);
+  const normalizedSeriesId = normalizeStaticSeries(product, normalizedCategory);
+  const seriesName = getSeriesById(normalizedSeriesId)?.name;
+  const categoryName = getCategoryById(normalizedCategory.primaryCategoryId || product.categoryId)?.name;
+  const subcategoryName = getCategoryById(normalizedCategory.subcategoryId || "")?.name;
   const displayName = publicProductDisplayName({
     id: product.id,
     displayName: product.displayName,
@@ -190,7 +256,7 @@ function toPublicProduct(product: CatalogProduct): PublicCatalogProduct {
   });
   const useReviewedContent = product.contentStatus === "ready" && product.manualReviewed === true;
   const activeDescription = `了解${displayName}的材质体验、产品类型、清洁保养与隐私购买说明。具体规格、价格、库存、优惠、物流和售后以蜜女郎官方旗舰店页面为准。`;
-  const primaryCategoryId = product.primaryCategoryId || product.categoryId;
+  const primaryCategoryId = normalizedCategory.primaryCategoryId;
 
   return {
     id: product.id,
@@ -199,8 +265,8 @@ function toPublicProduct(product: CatalogProduct): PublicCatalogProduct {
     shortName: product.shortName,
     categoryId: primaryCategoryId,
     primaryCategoryId,
-    subcategoryId: product.subcategoryId ?? null,
-    seriesId: product.seriesId,
+    subcategoryId: normalizedCategory.subcategoryId,
+    seriesId: normalizedSeriesId,
     publicTags: publicTags(product),
     status: product.status,
     featured: product.featured,
