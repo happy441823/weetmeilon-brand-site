@@ -725,15 +725,17 @@ function ProductEditorPanel({
   const slug = String(form.slug || "");
   const publicPath = slug ? `/products/${slug}` : "/products";
   const activeCategoryId = String(form.primary_category_id || "");
-  const primaryCategories = lookups.categories.filter((category) => category.level === "primary");
-  const secondaryCategories = lookups.categories.filter((category) => category.level === "secondary");
+  const activeCategories = lookups.categories.filter((category) => category.is_active !== 0);
+  const activeSeries = lookups.series.filter((series) => series.is_active !== 0);
+  const primaryCategories = activeCategories.filter((category) => category.level === "primary");
+  const secondaryCategories = activeCategories.filter((category) => category.level === "secondary");
   const primaryCategoryOptions = ensureCurrentOption(primaryCategories, lookups.categories, activeCategoryId);
   const subcategoryOptions = ensureCurrentOption(
     secondaryCategories.filter((category) => !activeCategoryId || category.parent_id === activeCategoryId),
     lookups.categories,
     String(form.subcategory_id || "")
   );
-  const seriesOptions = ensureCurrentOption(lookups.series, lookups.series, String(form.series_id || ""));
+  const seriesOptions = ensureCurrentOption(activeSeries, lookups.series, String(form.series_id || ""));
   const selectedPrimaryLabel = optionLabel(lookups.categories.find((category) => category.id === activeCategoryId), "产品");
   const selectedSubcategoryLabel = optionLabel(lookups.categories.find((category) => category.id === String(form.subcategory_id || "")), "");
 

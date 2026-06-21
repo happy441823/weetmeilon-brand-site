@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { adminNavigation, deleteRolesForResource, getResourceConfig, readRolesForResource, writeRolesForResource } from "../../src/lib/cms/schema.ts";
 
 test("admin users and roles are super admin managed resources", () => {
@@ -59,6 +60,14 @@ test("product resource exposes dedicated CMS fields and scheduled workflow statu
   }
   const status = products.fields.find((field) => field.name === "status");
   assert.equal(status.options.some((option) => option.value === "scheduled"), true);
+});
+
+test("product editor lookup dropdowns hide inactive taxonomy options", () => {
+  const source = readFileSync("src/app/admin/AdminCmsClient.tsx", "utf8");
+
+  assert.match(source, /activeCategories\s*=\s*lookups\.categories\.filter\(\(category\)\s*=>\s*category\.is_active\s*!==\s*0\)/);
+  assert.match(source, /activeSeries\s*=\s*lookups\.series\.filter\(\(series\)\s*=>\s*series\.is_active\s*!==\s*0\)/);
+  assert.match(source, /ensureCurrentOption\(activeSeries,\s*lookups\.series/);
 });
 
 test("sensitive admin resources require super admin read access", () => {
