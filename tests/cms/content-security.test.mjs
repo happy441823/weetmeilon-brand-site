@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   markdownToSafeHtml,
+  normalizeCmsJsonField,
   sanitizeHtml,
   validateConfigJson,
   validateContentBlocksJson,
@@ -79,4 +80,20 @@ test("content block validation rejects unknown fields and nested unsafe arrays",
 test("config JSON rejects dangerous strings recursively", () => {
   assert.equal(validateConfigJson({ layout: "default" }), JSON.stringify({ layout: "default" }));
   assert.throws(() => validateConfigJson({ nested: { links: ["data:text/html,<script>alert(1)</script>"] } }), /不安全/);
+});
+
+test("product gallery accepts pasted image URLs and normalizes them to JSON", () => {
+  const pasted = `
+    https://img.alicdn.com/imgextra/i3/example.jpg
+    https://img.alicdn.com/imgextra/i4/example.png,
+    https://img.alicdn.com/imgextra/i3/example.jpg
+  `;
+  assert.equal(
+    normalizeCmsJsonField("gallery_json", pasted, "[]"),
+    JSON.stringify(["https://img.alicdn.com/imgextra/i3/example.jpg", "https://img.alicdn.com/imgextra/i4/example.png"])
+  );
+});
+
+test("product gallery still rejects unsafe non-url content", () => {
+  assert.throws(() => normalizeCmsJsonField("gallery_json", "javascript:alert(1)", "[]"), /商品图集 JSON 格式不正确/);
 });

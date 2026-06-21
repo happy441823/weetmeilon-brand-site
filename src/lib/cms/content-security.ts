@@ -201,10 +201,37 @@ export function validateConfigJson(value: unknown) {
   return JSON.stringify(config);
 }
 
+function normalizeGalleryJson(value: unknown, fallback: string) {
+  if (value == null || value === "") return fallback;
+  if (typeof value !== "string") {
+    assertSafeRecursive(value, "gallery_json");
+    return JSON.stringify(value);
+  }
+
+  const raw = value.trim();
+  if (!raw) return fallback;
+
+  try {
+    const parsed = JSON.parse(raw);
+    assertSafeRecursive(parsed, "gallery_json");
+    return JSON.stringify(parsed);
+  } catch {
+    const urls = Array.from(raw.matchAll(/https?:\/\/[^\s"',\]\)）]+|\/[^\s"',\]\)）]+/gi))
+      .map((match) => normalizeUrl(match[0]).replace(/[，,。.;；]+$/g, ""))
+      .filter((url) => isSafeUrl(url));
+    const uniqueUrls = Array.from(new Set(urls));
+    if (uniqueUrls.length === 0) {
+      throw new Error("商品图集 JSON 格式不正确，请填写标准 JSON 数组，或直接粘贴一行一个的 http/https 图片链接。");
+    }
+    return JSON.stringify(uniqueUrls);
+  }
+}
+
 export function normalizeCmsJsonField(name: string, value: unknown, fallback: string) {
   if (name === "content_blocks_json") return validateContentBlocksJson(value);
   if (name === "modules_json") return validateModulesJson(value);
   if (name === "config_json") return validateConfigJson(value);
+  if (name === "gallery_json") return normalizeGalleryJson(value, fallback);
   if (value == null || value === "") return fallback;
   if (typeof value !== "string") {
     assertSafeRecursive(value, name || "json");
