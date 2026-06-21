@@ -30,6 +30,16 @@ export function adminErrorResponse(error: unknown) {
   if (error instanceof Error && "status" in error && typeof error.status === "number") {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }
+  if (error instanceof Error) {
+    const message = error.message || "";
+    if (/UNIQUE constraint failed: products\.slug/i.test(message)) {
+      return NextResponse.json({ error: "Slug 已被其他商品使用，请换一个唯一的 Slug。" }, { status: 409 });
+    }
+    if (/FOREIGN KEY constraint failed/i.test(message)) {
+      return NextResponse.json({ error: "关联的分类、系列或素材不存在，请重新选择后保存。" }, { status: 400 });
+    }
+    console.error("[cms-admin]", message);
+  }
 
   return NextResponse.json({ error: "后台服务暂时不可用，请稍后重试。" }, { status: 500 });
 }
@@ -182,22 +192,26 @@ export async function writeAuditLog(input: {
     return;
   }
 
-  await db
-    .prepare(
-      `INSERT INTO audit_logs (id, actor_id, actor_email, action, entity_type, entity_id, request_id, ip, summary, success)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .bind(
-      crypto.randomUUID(),
-      input.actor.id,
-      input.actor.email,
-      input.action,
-      input.entityType,
-      input.entityId || null,
-      input.request.headers.get("cf-ray") || input.request.headers.get("x-request-id") || null,
-      input.request.headers.get("cf-connecting-ip") || input.request.headers.get("x-forwarded-for") || null,
-      input.summary || null,
-      input.success === false ? 0 : 1
-    )
-    .run();
+  try {
+    await db
+      .prepare(
+        `INSERT INTO audit_logs (id, actor_id, actor_email, action, entity_type, entity_id, request_id, ip, summary, success)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        crypto.randomUUID(),
+        input.actor.id,
+        input.actor.email,
+        input.action,
+        input.entityType,
+        input.entityId || null,
+        input.request.headers.get("cf-ray") || input.request.headers.get("x-request-id") || null,
+        input.request.headers.get("cf-connecting-ip") || input.request.headers.get("x-forwarded-for") || null,
+        input.summary || null,
+        input.success === false ? 0 : 1
+      )
+      .run();
+  } catch (error) {
+    console.error("[cms-audit-log]", error instanceof Error ? error.message : error);
+  }
 }

@@ -234,9 +234,9 @@ export async function createResourceItem(resource: string, input: Record<string,
     .bind(...values)
     .run();
 
-  await createRevisionIfNeeded(resource, id, "创建内容", actorId);
+  await createRevisionSafely(resource, id, "创建内容", actorId);
   const item = await getResourceItem(resource, id);
-  await syncMediaUsages(resource, id, item || {});
+  await syncMediaUsagesSafely(resource, id, item || {});
   return item;
 }
 
@@ -260,9 +260,9 @@ export async function updateResourceItem(resource: string, id: string, input: Re
     .bind(...Object.values(payload), new Date().toISOString(), id)
     .run();
 
-  await createRevisionIfNeeded(resource, id, summary, actorId);
+  await createRevisionSafely(resource, id, summary, actorId);
   const item = await getResourceItem(resource, id);
-  await syncMediaUsages(resource, id, item || {});
+  await syncMediaUsagesSafely(resource, id, item || {});
   return item;
 }
 
@@ -400,6 +400,14 @@ export async function createRevisionIfNeeded(resource: string, id: string, summa
     .run();
 }
 
+async function createRevisionSafely(resource: string, id: string, summary: string, actorId?: string) {
+  try {
+    await createRevisionIfNeeded(resource, id, summary, actorId);
+  } catch (error) {
+    console.error("[cms-revision]", error instanceof Error ? error.message : error);
+  }
+}
+
 const explicitMediaFields = new Set(["cover_media_id", "hero_media_id", "og_media_id", "media_id", "image_media_id"]);
 const structuredMediaJsonFields = new Set(["gallery_json", "content_blocks_json", "modules_json", "config_json"]);
 
@@ -454,6 +462,14 @@ export async function syncMediaUsages(resource: string, id: string, payload: Rec
       .run();
   }
   await db.prepare("UPDATE media_assets SET usage_count = (SELECT COUNT(*) FROM media_usages WHERE media_id = media_assets.id)").run();
+}
+
+async function syncMediaUsagesSafely(resource: string, id: string, payload: Record<string, unknown>) {
+  try {
+    await syncMediaUsages(resource, id, payload);
+  } catch (error) {
+    console.error("[cms-media-usage]", error instanceof Error ? error.message : error);
+  }
 }
 
 export async function dashboardStats() {
