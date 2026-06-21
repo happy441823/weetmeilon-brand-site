@@ -82,7 +82,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       />
       <section className="container-shell grid gap-8 py-14 md:py-20 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
         <div className="overflow-hidden rounded-[34px] border border-white/10 bg-white/[0.055] shadow-purple">
-          <ImageFrame src={product.coverImage} alt={product.imageAlt} sizes="(min-width: 1024px) 45vw, 92vw" className="aspect-square" imageClassName="p-8" />
+          <ImageFrame src={product.coverImage} alt={product.imageAlt} sizes="(min-width: 1024px) 45vw, 92vw" className="aspect-square" imageClassName="p-0" />
         </div>
         <div>
           <p className="text-xs font-black uppercase tracking-[0.28em] text-mint-300">{seriesName}</p>

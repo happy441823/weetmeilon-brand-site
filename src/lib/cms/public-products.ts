@@ -158,8 +158,9 @@ function normalizeProductSeries(row: ProductRow, categories: { primaryCategoryId
 
 function productMediaPriority(item: ProductMediaRow) {
   const url = item.public_url || "";
-  if (item.image_type === "cover" && url.includes("/approved/cover.")) return 0;
-  if (item.image_type === "cover") return 1;
+  if (item.image_type === "cover" && /\/images\/products\/tmall\/\d+\./.test(url)) return 0;
+  if (item.image_type === "cover" && url.includes("/approved/cover.")) return 1;
+  if (item.image_type === "cover") return 2;
   if (url.includes("/approved/")) return 2;
   return 3;
 }

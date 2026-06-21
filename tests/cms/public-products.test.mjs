@@ -93,7 +93,7 @@ test("public products map per-product media public urls instead of one placehold
   process.env.CMS_PUBLIC_D1_READS = previous;
 });
 
-test("public products prefer approved cover media over legacy imported covers", async () => {
+test("public products prefer Tmall main cover media over approved composite covers", async () => {
   const previous = process.env.CMS_PUBLIC_D1_READS;
   process.env.CMS_PUBLIC_D1_READS = "true";
   setCmsBindingsForTest({
@@ -119,8 +119,8 @@ test("public products prefer approved cover media over legacy imported covers", 
   });
 
   const [product] = await getPublicProductsWithCmsFallback();
-  assert.equal(product.coverImage, "https://media.example.com/images/products/tmall-900451599013/approved/cover.webp");
-  assert.equal(product.imageAlt, "Approved cover");
+  assert.equal(product.coverImage, "https://media.example.com/images/products/tmall/900451599013.jpg");
+  assert.equal(product.imageAlt, "Legacy cover");
 
   setCmsBindingsForTest(null);
   process.env.CMS_PUBLIC_D1_READS = previous;
