@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildAdminSavePayload, resourceFromAdminPath, resourceItemKey, resourcePrimaryKey } from "../../src/app/admin/AdminCmsClient.tsx";
+import { buildAdminSavePayload, getAdminPagination, resourceFromAdminPath, resourceItemKey, resourcePrimaryKey } from "../../src/app/admin/AdminCmsClient.tsx";
 
 test("workflow resource save payload omits server-managed status fields", () => {
   const payload = buildAdminSavePayload("articles", {
@@ -35,4 +35,30 @@ test("admin UI derives import and SEO resources from route path", () => {
   assert.equal(resourceFromAdminPath("/admin/imports"), "import_jobs");
   assert.equal(resourceFromAdminPath("/admin/imports/jobs"), "import_jobs");
   assert.equal(resourceFromAdminPath("/admin/seo/indexing"), "seo_push_logs");
+});
+
+test("admin UI paginates long resource lists", () => {
+  assert.deepEqual(getAdminPagination(43, 2, 20), {
+    currentPage: 2,
+    pageCount: 3,
+    startIndex: 20,
+    endIndex: 40,
+    pageSize: 20
+  });
+
+  assert.deepEqual(getAdminPagination(43, 99, 20), {
+    currentPage: 3,
+    pageCount: 3,
+    startIndex: 40,
+    endIndex: 43,
+    pageSize: 20
+  });
+
+  assert.deepEqual(getAdminPagination(0, 3, 20), {
+    currentPage: 1,
+    pageCount: 1,
+    startIndex: 0,
+    endIndex: 0,
+    pageSize: 20
+  });
 });

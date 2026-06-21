@@ -122,6 +122,7 @@ function displayValue(value: unknown) {
 }
 
 const thumbnailResources = new Set(["products", "media_assets"]);
+const defaultAdminPageSize = 20;
 
 function resourceHasThumbnail(resource: string) {
   return thumbnailResources.has(resource);
@@ -144,6 +145,22 @@ function isImageRow(row?: Record<string, unknown> | null) {
   const mime = String(row.mime_type || "");
   const url = String(row.public_url || row._thumbnail_url || "");
   return mime.startsWith("image/") || /\.(avif|gif|jpe?g|png|webp|svg)(\?|#|$)/i.test(url);
+}
+
+export function getAdminPagination(totalRows: number, page: number, pageSize = defaultAdminPageSize) {
+  const normalizedPageSize = Math.max(1, Math.floor(pageSize));
+  const pageCount = Math.max(1, Math.ceil(totalRows / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, Math.floor(page)), pageCount);
+  const startIndex = totalRows === 0 ? 0 : (currentPage - 1) * normalizedPageSize;
+  const endIndex = totalRows === 0 ? 0 : Math.min(startIndex + normalizedPageSize, totalRows);
+
+  return {
+    currentPage,
+    pageCount,
+    startIndex,
+    endIndex,
+    pageSize: normalizedPageSize
+  };
 }
 
 function AdminThumbnail({ url, alt, size = "sm", muted = false }: { url: string; alt: string; size?: "sm" | "lg"; muted?: boolean }) {
@@ -183,11 +200,15 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(defaultAdminPageSize);
   const [message, setMessage] = useState("");
   const [adminRoleState, setAdminRoleState] = useState<AdminRoleState | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const config = resource !== "dashboard" && resource !== "backup" ? schema?.resources[resource] : null;
+  const pagination = useMemo(() => getAdminPagination(rows.length, page, pageSize), [page, pageSize, rows.length]);
+  const visibleRows = useMemo(() => rows.slice(pagination.startIndex, pagination.endIndex), [pagination.endIndex, pagination.startIndex, rows]);
 
   useEffect(() => {
     const nextResource = resourceFromAdminPath(pathname || "");
@@ -216,10 +237,17 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
     if (!schema || resource === "dashboard" || resource === "backup") return;
     void loadRows(resource);
     setSelected(null);
+    setPage(1);
     const nextConfig = schema.resources[resource];
     setForm(Object.fromEntries((nextConfig?.fields || []).map((field) => [field.name, emptyValue(field)])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schema, resource]);
+
+  useEffect(() => {
+    if (page !== pagination.currentPage) {
+      setPage(pagination.currentPage);
+    }
+  }, [page, pagination.currentPage]);
 
   useEffect(() => {
     if (!schema || !initialItemId || resource === "dashboard" || resource === "backup") return;
@@ -470,12 +498,22 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                 <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto_auto]">
                   <input
                     value={query}
-                    onChange={(event) => setQuery(event.target.value)}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      setPage(1);
+                    }}
                     placeholder={`搜索${config.labelPlural}`}
                     className="h-11 rounded-lg border border-white/12 bg-[#160722] px-3 text-sm outline-none"
                   />
                   {statusOptions.length ? (
-                    <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-lg border border-white/12 bg-[#160722] px-3 text-sm outline-none">
+                    <select
+                      value={status}
+                      onChange={(event) => {
+                        setStatus(event.target.value);
+                        setPage(1);
+                      }}
+                      className="h-11 rounded-lg border border-white/12 bg-[#160722] px-3 text-sm outline-none"
+                    >
                       <option value="">全部状态</option>
                       {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
@@ -493,7 +531,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((row) => (
+                      {visibleRows.map((row) => (
                         <tr key={resourceItemKey(row, config)} className="text-white/78">
                           {resourceHasThumbnail(resource) ? (
                             <td className="border-b border-white/8 px-3 py-3 align-middle">
@@ -518,6 +556,49 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                     </tbody>
                   </table>
                 </div>
+                {rows.length > 0 ? (
+                  <div className="mt-4 flex flex-col gap-3 border-t border-white/8 pt-4 text-sm text-white/60 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      显示 {pagination.startIndex + 1}-{pagination.endIndex} 条，共 {rows.length} 条
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="flex items-center gap-2">
+                        <span>每页</span>
+                        <select
+                          value={pageSize}
+                          onChange={(event) => {
+                            setPageSize(Number(event.target.value));
+                            setPage(1);
+                          }}
+                          className="h-9 rounded-lg border border-white/12 bg-[#160722] px-2 text-sm font-bold text-white outline-none"
+                        >
+                          {[10, 20, 50].map((size) => (
+                            <option key={size} value={size}>{size}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        disabled={pagination.currentPage <= 1}
+                        onClick={() => setPage((value) => Math.max(1, value - 1))}
+                        className="h-9 rounded-lg border border-white/12 px-3 text-xs font-black text-white/78 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35"
+                      >
+                        上一页
+                      </button>
+                      <span className="min-w-20 text-center text-xs font-black text-white/58">
+                        {pagination.currentPage} / {pagination.pageCount}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={pagination.currentPage >= pagination.pageCount}
+                        onClick={() => setPage((value) => Math.min(pagination.pageCount, value + 1))}
+                        className="h-9 rounded-lg border border-white/12 px-3 text-xs font-black text-white/78 transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-35"
+                      >
+                        下一页
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </section>
 
               <aside className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
