@@ -35,6 +35,14 @@ function isValidProductHref(url: string | null) {
   }
 }
 
+function getChannelLabel(channel: StoreChannel, label: string, source: string) {
+  if (source === "product_card") {
+    return channel === "tmall" ? "天猫旗舰店" : "京东旗舰店";
+  }
+
+  return label;
+}
+
 export function ProductChannelButtons({
   product,
   source,
@@ -57,7 +65,7 @@ export function ProductChannelButtons({
         <a
           key={channel}
           href={link.url || "#"}
-          className={`focus-ring inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-3 text-sm font-black transition hover:-translate-y-0.5 ${variantMap[channel]} ${buttonClassName}`}
+          className={`focus-ring inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-full px-4 py-3 text-center text-sm font-black leading-tight transition hover:-translate-y-0.5 ${variantMap[channel]} ${buttonClassName}`}
           onClick={() =>
             trackEvent(eventMap[channel], {
               source,
@@ -70,8 +78,8 @@ export function ProductChannelButtons({
           target="_blank"
           rel="noopener noreferrer nofollow sponsored"
         >
-          {link.label}
-          <span aria-hidden>-&gt;</span>
+          <span className="min-w-0 break-keep">{getChannelLabel(channel, link.label, source)}</span>
+          {source === "product_card" ? null : <span aria-hidden>-&gt;</span>}
         </a>
       ))}
     </div>
