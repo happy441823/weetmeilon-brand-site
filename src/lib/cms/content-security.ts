@@ -227,11 +227,82 @@ function normalizeGalleryJson(value: unknown, fallback: string) {
   }
 }
 
+function parsePlainLines(value: string) {
+  return value
+    .split(/\r?\n|[；;]/)
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^[-*•]\s*/, "")
+        .replace(/^\d+\s*[.|、:：｜|-]\s*/, "")
+        .trim()
+    )
+    .filter(Boolean);
+}
+
+function normalizeStringArrayJson(name: string, value: unknown, fallback: string) {
+  if (value == null || value === "") return fallback;
+  if (typeof value !== "string") {
+    assertSafeRecursive(value, name);
+    return JSON.stringify(value);
+  }
+
+  const raw = value.trim();
+  if (!raw) return fallback;
+
+  try {
+    const parsed = JSON.parse(raw);
+    assertSafeRecursive(parsed, name);
+    return JSON.stringify(parsed);
+  } catch {
+    const lines = parsePlainLines(raw);
+    if (lines.length === 0) {
+      throw new Error(`${name} 格式不正确，请填写标准 JSON 数组，或直接填写一行一个的文字。`);
+    }
+    assertSafeRecursive(lines, name);
+    return JSON.stringify(lines);
+  }
+}
+
+function normalizeSpecificationsJson(value: unknown, fallback: string) {
+  if (value == null || value === "") return fallback;
+  if (typeof value !== "string") {
+    assertSafeRecursive(value, "specifications_json");
+    return JSON.stringify(value);
+  }
+
+  const raw = value.trim();
+  if (!raw) return fallback;
+
+  try {
+    const parsed = JSON.parse(raw);
+    assertSafeRecursive(parsed, "specifications_json");
+    return JSON.stringify(parsed);
+  } catch {
+    const items = parsePlainLines(raw).map((line) => {
+      const separator = line.match(/\s*[:：｜|]\s*/);
+      if (!separator || separator.index == null) {
+        return { label: "说明", value: line };
+      }
+      const label = line.slice(0, separator.index).trim();
+      const valueText = line.slice(separator.index + separator[0].length).trim();
+      return { label: label || "说明", value: valueText || line };
+    });
+    if (items.length === 0) {
+      throw new Error("规格 JSON 格式不正确，请填写标准 JSON 数组，或直接填写一行一个的“名称：内容”。");
+    }
+    assertSafeRecursive(items, "specifications_json");
+    return JSON.stringify(items);
+  }
+}
+
 export function normalizeCmsJsonField(name: string, value: unknown, fallback: string) {
   if (name === "content_blocks_json") return validateContentBlocksJson(value);
   if (name === "modules_json") return validateModulesJson(value);
   if (name === "config_json") return validateConfigJson(value);
   if (name === "gallery_json") return normalizeGalleryJson(value, fallback);
+  if (name === "highlights_json" || name === "concerns_json") return normalizeStringArrayJson(name, value, fallback);
+  if (name === "specifications_json") return normalizeSpecificationsJson(value, fallback);
   if (value == null || value === "") return fallback;
   if (typeof value !== "string") {
     assertSafeRecursive(value, name || "json");

@@ -97,3 +97,30 @@ test("product gallery accepts pasted image URLs and normalizes them to JSON", ()
 test("product gallery still rejects unsafe non-url content", () => {
   assert.throws(() => normalizeCmsJsonField("gallery_json", "javascript:alert(1)", "[]"), /商品图集 JSON 格式不正确/);
 });
+
+test("product highlights and concerns accept plain pasted lines", () => {
+  assert.equal(
+    normalizeCmsJsonField(
+      "highlights_json",
+      `01 | 饱满臀型轮廓
+       02 | 多重互动体验`,
+      "[]"
+    ),
+    JSON.stringify(["饱满臀型轮廓", "多重互动体验"])
+  );
+
+  assert.equal(
+    normalizeCmsJsonField("concerns_json", `- 清洁收纳\n- 官方渠道`, "[]"),
+    JSON.stringify(["清洁收纳", "官方渠道"])
+  );
+});
+
+test("product specifications accept label value pasted lines", () => {
+  assert.equal(
+    normalizeCmsJsonField("specifications_json", `产品类型：自动体验款\n关注重点：轮廓、清洁收纳`, "[]"),
+    JSON.stringify([
+      { label: "产品类型", value: "自动体验款" },
+      { label: "关注重点", value: "轮廓、清洁收纳" }
+    ])
+  );
+});
