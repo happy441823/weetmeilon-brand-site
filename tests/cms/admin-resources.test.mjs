@@ -62,6 +62,12 @@ test("product resource exposes dedicated CMS fields and scheduled workflow statu
   assert.equal(status.options.some((option) => option.value === "scheduled"), true);
 });
 
+test("product admin list can locate frontend cards by product id", () => {
+  const products = getResourceConfig("products");
+  assert.equal(products.searchable.includes("id"), true);
+  assert.equal(products.listColumns.includes("id"), true);
+});
+
 test("product editor lookup dropdowns hide inactive taxonomy options", () => {
   const source = readFileSync("src/app/admin/AdminCmsClient.tsx", "utf8");
 

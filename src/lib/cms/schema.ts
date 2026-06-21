@@ -110,9 +110,9 @@ export const cmsResources = {
     table: "products",
     label: "商品",
     labelPlural: "商品管理",
-    searchable: ["name", "short_name", "slug", "summary"],
+    searchable: ["id", "name", "short_name", "slug", "summary"],
     mutableRoles: ["super_admin", "editor", "reviewer"],
-    listColumns: ["name", "status", "slug", "updated_at"],
+    listColumns: ["id", "name", "status", "slug", "updated_at"],
     fields: [
       { name: "name", label: "商品名称", type: "text", required: true },
       { name: "short_name", label: "卡片短名称", type: "text" },
