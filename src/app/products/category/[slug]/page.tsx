@@ -46,7 +46,9 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   }
 
   return {
-    title: category.seoTitle,
+    title: {
+      absolute: category.seoTitle
+    },
     description: category.seoDescription,
     alternates: {
       canonical: canonicalPath(`/products/category/${category.slug}`)
@@ -71,19 +73,21 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       ? publicProducts.filter((product) => product.primaryCategoryId === category.id || product.subcategoryId === category.id)
       : getProductsByCategory(category.id);
 
-  if (products.length === 0) {
-    notFound();
-  }
-
   return (
     <main>
       <section className="container-shell py-12 md:py-16">
         <SectionHeader eyebrow="Category" title={category.name} description={category.description} />
-        <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          {products.map((product) => (
-            <ProductCard key={product.slug} product={product} />
-          ))}
-        </div>
+        {products.length > 0 ? (
+          <div className="mt-8 grid gap-5 lg:grid-cols-3">
+            {products.map((product) => (
+              <ProductCard key={product.slug} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8 rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 text-aura/72">
+            当前分类暂无已上架商品，请先返回产品中心查看其他分类。新品上架后会自动出现在这里。
+          </div>
+        )}
       </section>
 
       <section className="bg-white/[0.025] py-12 md:py-16">
@@ -91,7 +95,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           <SectionHeader
             eyebrow="Official Channels"
             title="查看具体商品，请以官方旗舰店页面为准"
-            description="优惠、库存、物流、售后和具体产品详情，以天猫旗舰店或京东旗舰店页面展示为准。"
+            description="具体规格、发货、售后与商品详情，以天猫官方旗舰店或京东官方旗舰店页面展示为准。"
           />
           <div className="mt-7">
             <StoreButtons source="category_page" />

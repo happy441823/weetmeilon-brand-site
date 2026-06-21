@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { catalogCategories, catalogSeries, getPublicCatalogProducts } from "../../src/lib/catalog.ts";
 
 test("product filter taxonomy uses the approved primary category labels", () => {
@@ -57,4 +58,13 @@ test("public fallback products map old material categories into the approved fil
       assert.equal(visibleSeriesIds.has(product.seriesId), true, product.slug);
     }
   }
+});
+
+test("category pages keep visible empty categories accessible and avoid duplicated brand title", () => {
+  const source = readFileSync("src/app/products/category/[slug]/page.tsx", "utf8");
+
+  assert.match(source, /title:\s*\{\s*absolute:\s*category\.seoTitle\s*\}/);
+  assert.doesNotMatch(source, /if \(products\.length === 0\)\s*\{\s*notFound\(\)/);
+  assert.match(source, /当前分类暂无已上架商品/);
+  assert.doesNotMatch(source, /优惠、库存/);
 });
