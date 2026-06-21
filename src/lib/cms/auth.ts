@@ -38,10 +38,29 @@ export function adminErrorResponse(error: unknown) {
     if (/FOREIGN KEY constraint failed/i.test(message)) {
       return NextResponse.json({ error: "关联的分类、系列或素材不存在，请重新选择后保存。" }, { status: 400 });
     }
+    if (/CHECK constraint failed/i.test(message)) {
+      return NextResponse.json({ error: "字段值不符合数据库约束，请检查状态、分类或开关字段后再保存。" }, { status: 400 });
+    }
+    if (/NOT NULL constraint failed/i.test(message)) {
+      return NextResponse.json({ error: "必填字段缺失，请补全后再保存。" }, { status: 400 });
+    }
+    if (/Unexpected (token|end)|JSON/i.test(message)) {
+      return NextResponse.json({ error: "JSON 字段格式不正确，请检查商品图集、亮点、规格等 JSON 内容。" }, { status: 400 });
+    }
     console.error("[cms-admin]", message);
+    return NextResponse.json({ error: `后台保存失败：${safeAdminErrorMessage(message)}` }, { status: 500 });
   }
 
   return NextResponse.json({ error: "后台服务暂时不可用，请稍后重试。" }, { status: 500 });
+}
+
+function safeAdminErrorMessage(message: string) {
+  return message
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/g, "Bearer [redacted]")
+    .replace(/(token|cookie|password|secret|key)=([^&\s]+)/gi, "$1=[redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 240);
 }
 
 function header(request: Request, name: string) {
