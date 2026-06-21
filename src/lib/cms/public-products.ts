@@ -156,6 +156,14 @@ function normalizeProductSeries(row: ProductRow, categories: { primaryCategoryId
   return row.series_id || null;
 }
 
+function productMediaPriority(item: ProductMediaRow) {
+  const url = item.public_url || "";
+  if (item.image_type === "cover" && url.includes("/approved/cover.")) return 0;
+  if (item.image_type === "cover") return 1;
+  if (url.includes("/approved/")) return 2;
+  return 3;
+}
+
 function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): PublicCatalogProduct {
   const upcoming = row.status === "coming_soon";
   const categoryName = catalogCategories.find((item) => item.id === row.primary_category_id)?.name;
@@ -175,7 +183,13 @@ function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): Public
   const channelEnabled = !upcoming && row.buy_button_enabled !== 0;
   const categories = normalizeProductCategories(row);
   const seriesId = normalizeProductSeries(row, categories);
-  const sortedMedia = [...media].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+  const sortedMedia = [...media].sort((a, b) => {
+    const priority = productMediaPriority(a) - productMediaPriority(b);
+    if (priority !== 0) return priority;
+    const order = Number(a.sort_order || 0) - Number(b.sort_order || 0);
+    if (order !== 0) return order;
+    return String(a.public_url || "").localeCompare(String(b.public_url || ""));
+  });
   const cover = sortedMedia.find((item) => item.image_type === "cover" && item.public_url) || sortedMedia.find((item) => item.public_url);
   const gallery = sortedMedia.map((item) => item.public_url).filter((url): url is string => Boolean(url));
   return {

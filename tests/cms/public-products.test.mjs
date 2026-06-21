@@ -93,6 +93,39 @@ test("public products map per-product media public urls instead of one placehold
   process.env.CMS_PUBLIC_D1_READS = previous;
 });
 
+test("public products prefer approved cover media over legacy imported covers", async () => {
+  const previous = process.env.CMS_PUBLIC_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "true";
+  setCmsBindingsForTest({
+    CMS_DB: createPublicDb(
+      [{ id: "p1", slug: "one", name: "One", status: "published", sort_order: 1 }],
+      [
+        {
+          product_id: "p1",
+          image_type: "cover",
+          sort_order: 0,
+          alt_text: "Legacy cover",
+          public_url: "https://media.example.com/images/products/tmall/900451599013.jpg"
+        },
+        {
+          product_id: "p1",
+          image_type: "cover",
+          sort_order: 0,
+          alt_text: "Approved cover",
+          public_url: "https://media.example.com/images/products/tmall-900451599013/approved/cover.webp"
+        }
+      ]
+    )
+  });
+
+  const [product] = await getPublicProductsWithCmsFallback();
+  assert.equal(product.coverImage, "https://media.example.com/images/products/tmall-900451599013/approved/cover.webp");
+  assert.equal(product.imageAlt, "Approved cover");
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = previous;
+});
+
 test("public products normalize legacy imported categories into the active taxonomy", async () => {
   const previous = process.env.CMS_PUBLIC_D1_READS;
   process.env.CMS_PUBLIC_D1_READS = "true";

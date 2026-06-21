@@ -71,7 +71,7 @@ export function ProductChannelButtons({
           rel="noopener noreferrer nofollow sponsored"
         >
           {link.label}
-          <span aria-hidden>↗</span>
+          <span aria-hidden>-&gt;</span>
         </a>
       ))}
     </div>
