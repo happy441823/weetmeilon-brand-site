@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { buildAdminSavePayload, getAdminPagination, resourceFromAdminPath, resourceItemKey, resourcePrimaryKey } from "../../src/app/admin/AdminCmsClient.tsx";
 
 test("workflow resource save payload omits server-managed status fields", () => {
@@ -35,6 +36,13 @@ test("admin UI derives import and SEO resources from route path", () => {
   assert.equal(resourceFromAdminPath("/admin/imports"), "import_jobs");
   assert.equal(resourceFromAdminPath("/admin/imports/jobs"), "import_jobs");
   assert.equal(resourceFromAdminPath("/admin/seo/indexing"), "seo_push_logs");
+});
+
+test("admin root renders the product CMS without server redirect", () => {
+  const source = readFileSync("src/app/admin/page.tsx", "utf8");
+  assert.doesNotMatch(source, /redirect\(/);
+  assert.match(source, /AdminCmsClient/);
+  assert.match(source, /initialResource="products"/);
 });
 
 test("admin UI paginates long resource lists", () => {

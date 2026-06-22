@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { AdminCmsClient } from "./AdminCmsClient";
 
 export default function AdminPage() {
-  redirect("/admin/products");
+  return <AdminCmsClient initialResource="products" />;
 }

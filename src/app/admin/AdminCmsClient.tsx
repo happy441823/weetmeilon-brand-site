@@ -196,6 +196,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [resource, setResource] = useState(pathResource || initialResource);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+  const [totalRows, setTotalRows] = useState(0);
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [query, setQuery] = useState("");
@@ -207,8 +208,8 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   const [isPending, startTransition] = useTransition();
 
   const config = resource !== "dashboard" && resource !== "backup" ? schema?.resources[resource] : null;
-  const pagination = useMemo(() => getAdminPagination(rows.length, page, pageSize), [page, pageSize, rows.length]);
-  const visibleRows = useMemo(() => rows.slice(pagination.startIndex, pagination.endIndex), [pagination.endIndex, pagination.startIndex, rows]);
+  const pagination = useMemo(() => getAdminPagination(totalRows, page, pageSize), [page, pageSize, totalRows]);
+  const visibleRows = rows;
 
   useEffect(() => {
     const nextResource = resourceFromAdminPath(pathname || "");
@@ -250,6 +251,12 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   }, [page, pagination.currentPage]);
 
   useEffect(() => {
+    if (!schema || resource === "dashboard" || resource === "backup") return;
+    void loadRows(resource);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize]);
+
+  useEffect(() => {
     if (!schema || !initialItemId || resource === "dashboard" || resource === "backup") return;
     const activeConfig = schema.resources[resource];
     if (!activeConfig) return;
@@ -270,14 +277,18 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (status) params.set("status", status);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
     const response = await fetch(`/api/admin/resource/${target}?${params}`, { cache: "no-store" });
     const data = await response.json();
     if (!response.ok) {
       setMessage(data.error || "读取失败。");
       setRows([]);
+      setTotalRows(0);
       return;
     }
     setRows(data.rows || []);
+    setTotalRows(Number(data.total || 0));
     if (data.dbReady === false) {
       setMessage("当前环境尚未绑定 CMS_DB，页面可预览但不能读取真实 D1 数据。");
     }
@@ -550,16 +561,16 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
                           </td>
                         </tr>
                       ))}
-                      {rows.length === 0 ? (
+                      {visibleRows.length === 0 ? (
                         <tr><td colSpan={config.listColumns.length + (resourceHasThumbnail(resource) ? 2 : 1)} className="px-3 py-10 text-center text-white/45">暂无数据。请先执行 D1 migration 和数据迁移脚本。</td></tr>
                       ) : null}
                     </tbody>
                   </table>
                 </div>
-                {rows.length > 0 ? (
+                {totalRows > 0 ? (
                   <div className="mt-4 flex flex-col gap-3 border-t border-white/8 pt-4 text-sm text-white/60 md:flex-row md:items-center md:justify-between">
                     <div>
-                      显示 {pagination.startIndex + 1}-{pagination.endIndex} 条，共 {rows.length} 条
+                      显示 {pagination.startIndex + 1}-{pagination.endIndex} 条，共 {totalRows} 条
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <label className="flex items-center gap-2">
