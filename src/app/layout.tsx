@@ -43,6 +43,9 @@ export const metadata: Metadata = {
       { url: "/favicon-32x32.png?v=brand-3", type: "image/png", sizes: "32x32" }
     ],
     apple: [{ url: "/apple-icon.png?v=brand-3", type: "image/png", sizes: "180x180" }]
+  },
+  other: {
+    "baidu-site-verification": "codeva-THc1zEwGZb"
   }
 };
 
