@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   title: "SWEETMEILON CMS 后台",

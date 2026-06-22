@@ -45,6 +45,12 @@ test("admin root renders the product CMS without server redirect", () => {
   assert.match(source, /initialResource="products"/);
 });
 
+test("admin layout keeps the CMS shell static", () => {
+  const source = readFileSync("src/app/admin/layout.tsx", "utf8");
+  assert.doesNotMatch(source, /force-dynamic/);
+  assert.match(source, /force-static/);
+});
+
 test("admin UI paginates long resource lists", () => {
   assert.deepEqual(getAdminPagination(43, 2, 20), {
     currentPage: 2,
