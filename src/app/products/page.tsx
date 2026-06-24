@@ -44,9 +44,9 @@ export default async function ProductsPage() {
           <SectionHeader eyebrow="Official Channels" title="购买前先确认商品状态" description="新品预告不展示购买按钮；已上架商品展示可前往官方渠道查看的入口。" />
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             {[
-              ["即将上新", "原生肌凝硅三款目前为新品预告，不显示价格、库存或购买按钮。"],
+              ["即将上新", "原生肌凝硅三款目前为新品预告，暂不显示购买按钮。"],
               ["已上架", "已开放展示的商品会提供官方渠道入口，具体信息以旗舰店页面为准。"],
-              ["信息边界", "官网不展示动态价格、库存或平台活动标签。"],
+              ["信息边界", "官网不展示交易动态或平台活动标签。"],
               ["官方渠道", "官网用于种草和信任建立，最终在天猫旗舰店或京东旗舰店完成成交。"]
             ].map(([title, text]) => (
               <div key={title} className="rounded-[26px] border border-white/10 bg-white/[0.045] p-6">

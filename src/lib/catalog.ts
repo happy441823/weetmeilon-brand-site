@@ -255,7 +255,7 @@ function toPublicProduct(product: CatalogProduct): PublicCatalogProduct {
     subcategoryName
   });
   const useReviewedContent = product.contentStatus === "ready" && product.manualReviewed === true;
-  const activeDescription = `了解${displayName}的材质体验、产品类型、清洁保养与隐私购买说明。具体规格、价格、库存、优惠、物流和售后以蜜女郎官方旗舰店页面为准。`;
+  const activeDescription = `了解${displayName}的材质体验、产品类型、清洁保养与隐私购买说明。具体规格、发货、物流和售后以蜜女郎官方旗舰店页面为准。`;
   const primaryCategoryId = normalizedCategory.primaryCategoryId;
 
   return {
@@ -282,7 +282,7 @@ function toPublicProduct(product: CatalogProduct): PublicCatalogProduct {
       ? product.highlights
       : [
           "商品购买、发货、售后由官方旗舰店提供。",
-          "官网仅保留购买前需要确认的基础信息，不展示动态价格、库存或活动标签。"
+          "官网仅保留购买前需要确认的基础信息，不展示交易动态或活动标签。"
         ],
     publicSpecifications: publicSpecifications(product),
     careNotes: isUpcoming ? product.careNotes : product.careNotes.slice(0, 3),

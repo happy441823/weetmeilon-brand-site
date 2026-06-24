@@ -17,7 +17,7 @@ export default function ContactPage() {
         <SectionHeader
           eyebrow="Contact"
           title="商品和订单问题，请优先联系官方旗舰店客服"
-          description="官网用于展示品牌与产品信息，不直接处理平台订单。涉及商品详情、优惠、物流、售后、发票等问题，请以天猫或京东官方旗舰店客服回复为准。"
+          description="官网用于展示品牌与产品信息，不直接处理平台订单。涉及商品详情、物流、售后、发票等问题，请以天猫或京东官方旗舰店客服回复为准。"
         />
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {[

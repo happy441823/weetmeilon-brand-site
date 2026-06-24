@@ -81,7 +81,7 @@ export default function BrandPage() {
         <div className="rounded-[34px] border border-mint-300/22 bg-white/[0.055] p-6 md:p-10">
           <h2 className="text-3xl font-black text-white">了解清楚，再去官方旗舰店购买</h2>
           <p className="mt-4 max-w-3xl text-base leading-8 text-aura/72">
-            官网提供品牌与产品信息参考，具体商品、价格、库存、物流及售后服务，由天猫或京东官方旗舰店提供。
+            官网提供品牌与产品信息参考，具体商品规格、发货、物流及售后服务，由天猫或京东官方旗舰店提供。
           </p>
           <div className="mt-7">
             <StoreButtons source="brand_page" />

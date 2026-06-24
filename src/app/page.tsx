@@ -173,7 +173,7 @@ export default async function HomePage() {
               <span className="block bg-mint-gradient bg-clip-text text-transparent">从材质开始</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-9 text-aura/72">
-              从材质触感到产品选择，从隐私发货到清洁保养，蜜女郎官网帮你在购买前了解得更清楚、更安心。具体商品、优惠、库存及售后信息，以天猫或京东官方旗舰店页面为准。
+              从材质触感到产品选择，从隐私购买到清洁保养，蜜女郎官网帮你在购买前了解得更清楚、更安心。具体商品规格、发货与售后说明，以天猫或京东官方旗舰店页面为准。
             </p>
             <div className="mt-8 grid gap-3">
               <StoreButtons source="home_hero" buttonClassName="w-full md:w-auto md:min-w-44" />
@@ -398,7 +398,7 @@ export default async function HomePage() {
             <p className="text-xs font-black uppercase tracking-[0.26em] text-mint-300">Official Store Channels</p>
             <h2 className="mt-4 text-balance text-3xl font-black text-white md:text-5xl">了解清楚，再前往官方旗舰店购买</h2>
             <p className="mt-4 text-base leading-8 text-aura/70">
-              具体商品、价格、优惠、库存、物流与售后服务，以天猫或京东官方旗舰店页面为准。
+              具体商品规格、发货、物流与售后服务，以天猫或京东官方旗舰店页面为准。
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <StoreButtons source="home_final_cta" />

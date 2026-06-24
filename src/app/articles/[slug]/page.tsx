@@ -112,7 +112,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
           <aside className="h-fit rounded-[30px] border border-mint-300/20 bg-plum-950/60 p-6">
             <h2 className="text-xl font-black text-white">购买前提醒</h2>
             <p className="mt-3 text-sm leading-7 text-aura/64">
-              官网内容用于帮助理解品牌、材质和产品信息。实际商品、优惠、库存、物流与售后规则，以天猫或京东官方旗舰店页面为准。
+              官网内容用于帮助理解品牌、材质和产品信息。实际商品规格、发货、物流与售后规则，以天猫或京东官方旗舰店页面为准。
             </p>
             <div className="mt-5 grid gap-3">
               <StoreButtons source="article_sidebar" />

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "京东旗舰店",
     "原生肌凝硅",
     "硅胶产品",
-    "成人用品隐私发货",
+    "隐私购买与收货",
     "官方旗舰店"
   ],
   openGraph: {
