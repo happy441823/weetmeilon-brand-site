@@ -126,6 +126,46 @@ test("public products prefer Tmall main cover media over approved composite cove
   process.env.CMS_PUBLIC_D1_READS = previous;
 });
 
+test("public products sanitize unstable commerce copy from D1 fields", async () => {
+  const previous = process.env.CMS_PUBLIC_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "true";
+  setCmsBindingsForTest({
+    CMS_DB: createPublicDb([
+      {
+        id: "p1",
+        slug: "coming-soon-preview",
+        name: "Preview",
+        status: "coming_soon",
+        sort_order: 1,
+        summary: "具体名称、材质、规格、颜色、价格、上架时间及购买渠道，以官方旗舰店为准。",
+        subtitle: "不展示动态价格、库存",
+        body_html: "不展示价格、库存、优惠、销量和付款人数。",
+        highlights_json: JSON.stringify([
+          "价格、库存、优惠会随平台变化",
+          "近365天付款不进入官网"
+        ]),
+        care_notes: "清洁说明不包含实时价格",
+        privacy_notes: "不展示动态销量"
+      }
+    ])
+  });
+
+  const [product] = await getPublicProductsWithCmsFallback();
+  const publicText = [
+    product.shortDescription,
+    product.fullDescription,
+    product.heroLine,
+    ...product.highlights,
+    ...product.careNotes,
+    ...product.privacyNotes
+  ].join("\n");
+  assert.doesNotMatch(publicText, /价格|库存|优惠|销量|付款人数|近365天付款|实时价格|动态价格|动态销量/);
+  assert.match(publicText, /官方渠道说明|交易动态|发货/);
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = previous;
+});
+
 test("public products normalize legacy imported categories into the active taxonomy", async () => {
   const previous = process.env.CMS_PUBLIC_D1_READS;
   process.env.CMS_PUBLIC_D1_READS = "true";

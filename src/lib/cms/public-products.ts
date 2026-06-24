@@ -82,6 +82,26 @@ function parseJsonArray<T>(value: unknown, fallback: T[] = []) {
   }
 }
 
+function sanitizePublicCommerceCopy(value: string) {
+  return value
+    .replace(/具体名称、材质、规格、颜色、价格、上架时间及购买渠道/g, "具体名称、材质、规格、颜色、上架时间及官方渠道说明")
+    .replace(/具体商品、价格、库存、优惠、物流和售后/g, "具体商品规格、发货、物流和售后")
+    .replace(/价格、库存、优惠/g, "发货、物流和售后")
+    .replace(/动态价格、库存/g, "交易动态")
+    .replace(/动态价格/g, "交易动态")
+    .replace(/动态销量/g, "交易动态")
+    .replace(/近365天付款/g, "交易动态")
+    .replace(/付款人数/g, "交易动态")
+    .replace(/销量/g, "交易动态")
+    .replace(/价格/g, "发货")
+    .replace(/库存/g, "物流")
+    .replace(/优惠/g, "售后");
+}
+
+function sanitizePublicCommerceList(values: string[]) {
+  return values.map((value) => sanitizePublicCommerceCopy(String(value))).filter(Boolean);
+}
+
 function normalizeProductCategories(row: ProductRow) {
   const currentPrimary = row.primary_category_id || "other";
   const currentSubcategory = row.subcategory_id || null;
@@ -180,7 +200,7 @@ function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): Public
     categoryName,
     subcategoryName
   });
-  const summary = row.summary || row.subtitle || displayName;
+  const summary = sanitizePublicCommerceCopy(row.summary || row.subtitle || displayName);
   const channelEnabled = !upcoming && row.buy_button_enabled !== 0;
   const categories = normalizeProductCategories(row);
   const seriesId = normalizeProductSeries(row, categories);
@@ -211,12 +231,12 @@ function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): Public
     gallery: gallery.length > 0 ? gallery : parseJsonArray<string>(row.gallery_json),
     imageAlt: cover?.alt_text || row.image_alt || displayName,
     shortDescription: summary,
-    fullDescription: row.body_html || summary,
-    heroLine: row.subtitle || summary,
-    highlights: parseJsonArray<string>(row.highlights_json, summary ? [summary] : []),
+    fullDescription: sanitizePublicCommerceCopy(row.body_html || summary),
+    heroLine: sanitizePublicCommerceCopy(row.subtitle || summary),
+    highlights: sanitizePublicCommerceList(parseJsonArray<string>(row.highlights_json, summary ? [summary] : [])),
     publicSpecifications: safePublicSpecifications(parseJsonArray<{ label: string; value: string }>(row.specifications_json), row.status),
-    careNotes: row.care_notes ? [row.care_notes] : [],
-    privacyNotes: row.privacy_notes ? [row.privacy_notes] : [],
+    careNotes: row.care_notes ? [sanitizePublicCommerceCopy(row.care_notes)] : [],
+    privacyNotes: row.privacy_notes ? [sanitizePublicCommerceCopy(row.privacy_notes)] : [],
     channelLinks: {
       tmall: {
         enabled: channelEnabled && row.tmall_enabled === 1 && Boolean(row.tmall_url),
