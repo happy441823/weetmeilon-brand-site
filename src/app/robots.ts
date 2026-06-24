@@ -6,6 +6,8 @@ const publicSearchBots = [
   "Googlebot",
   "Bingbot",
   "Baiduspider",
+  "Bytespider",
+  "ToutiaoSpider",
   "Sogou web spider",
   "360Spider",
   "YisouSpider",

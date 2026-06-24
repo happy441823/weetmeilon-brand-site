@@ -5,7 +5,18 @@ import { readFileSync } from "node:fs";
 test("robots explicitly allows mainstream search crawlers and blocks private CMS paths", () => {
   const source = readFileSync("src/app/robots.ts", "utf8");
 
-  for (const bot of ["Googlebot", "Bingbot", "Baiduspider", "Sogou web spider", "360Spider", "YisouSpider", "DuckDuckBot", "Applebot"]) {
+  for (const bot of [
+    "Googlebot",
+    "Bingbot",
+    "Baiduspider",
+    "Bytespider",
+    "ToutiaoSpider",
+    "Sogou web spider",
+    "360Spider",
+    "YisouSpider",
+    "DuckDuckBot",
+    "Applebot"
+  ]) {
     assert.match(source, new RegExp(JSON.stringify(bot).slice(1, -1)), bot);
   }
 
