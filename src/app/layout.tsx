@@ -45,7 +45,8 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-icon.png?v=brand-3", type: "image/png", sizes: "180x180" }]
   },
   other: {
-    "baidu-site-verification": "codeva-THc1zEwGZb"
+    "baidu-site-verification": "codeva-THc1zEwGZb",
+    "bytedance-verification-code": "LXpI8KB1tpt9T+yi1tIS"
   }
 };
 
