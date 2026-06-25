@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { buildAdminSavePayload, getAdminPagination, resourceFromAdminPath, resourceItemKey, resourcePrimaryKey } from "../../src/app/admin/AdminCmsClient.tsx";
+import { buildAdminSavePayload, getAdminPagination, pickDirtyAdminFields, resourceFromAdminPath, resourceItemKey, resourcePrimaryKey } from "../../src/app/admin/AdminCmsClient.tsx";
 
 test("workflow resource save payload omits server-managed status fields", () => {
   const payload = buildAdminSavePayload("articles", {
@@ -22,6 +22,22 @@ test("non-workflow resource save payload keeps normal fields", () => {
   assert.deepEqual(buildAdminSavePayload("site_settings", { key: "seo.default_title", value_json: '"A"' }), {
     key: "seo.default_title",
     value_json: '"A"'
+  });
+});
+
+test("admin edit payload can be limited to dirty fields", () => {
+  const dirty = pickDirtyAdminFields(
+    {
+      name: "New product name",
+      gallery_json: "not touched legacy text",
+      seo_title: "New SEO title"
+    },
+    ["name", "seo_title"]
+  );
+
+  assert.deepEqual(dirty, {
+    name: "New product name",
+    seo_title: "New SEO title"
   });
 });
 

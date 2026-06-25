@@ -89,6 +89,10 @@ export function buildAdminSavePayload(resource: string, form: Record<string, unk
   return Object.fromEntries(Object.entries(form).filter(([key]) => !workflowManagedClientFields.has(key)));
 }
 
+export function pickDirtyAdminFields(form: Record<string, unknown>, dirtyFields: Iterable<string>) {
+  return Object.fromEntries(Array.from(dirtyFields).filter((key) => Object.hasOwn(form, key)).map((key) => [key, form[key]]));
+}
+
 const adminPathResources = [
   { path: "/admin/products", resource: "products" },
   { path: "/admin/articles", resource: "articles" },
@@ -199,6 +203,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
   const [totalRows, setTotalRows] = useState(0);
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
+  const [dirtyFields, setDirtyFields] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
@@ -239,6 +244,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
     void loadRows(resource);
     setSelected(null);
     setPage(1);
+    setDirtyFields(new Set());
     const nextConfig = schema.resources[resource];
     setForm(Object.fromEntries((nextConfig?.fields || []).map((field) => [field.name, emptyValue(field)])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -298,12 +304,14 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
     if (!config) return;
     setSelected(null);
     setAdminRoleState(null);
+    setDirtyFields(new Set());
     setForm(Object.fromEntries(config.fields.map((field) => [field.name, emptyValue(field)])));
   }
 
   function editRow(row: Record<string, unknown>) {
     setSelected(row);
     if (!config) return;
+    setDirtyFields(new Set());
     setForm(Object.fromEntries(config.fields.map((field) => [field.name, row[field.name] ?? emptyValue(field)])));
     if (resource === "admin_users") {
       void loadAdminRoles(row, config);
@@ -314,6 +322,7 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
 
   function setField(name: string, value: unknown) {
     setForm((current) => ({ ...current, [name]: value }));
+    setDirtyFields((current) => new Set(current).add(name));
   }
 
   function selectResource(nextResource: string) {
@@ -331,10 +340,15 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
       try {
         const id = selected ? resourceItemKey(selected, config) : "";
         const url = selected ? `/api/admin/resource/${resource}/${encodeURIComponent(id)}` : `/api/admin/resource/${resource}`;
+        const payloadSource = selected ? pickDirtyAdminFields(form, dirtyFields) : form;
+        if (selected && Object.keys(payloadSource).length === 0) {
+          setMessage("没有需要保存的修改。");
+          return;
+        }
         const response = await fetch(url, {
           method: selected ? "PATCH" : "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(buildAdminSavePayload(resource, form))
+          body: JSON.stringify(buildAdminSavePayload(resource, payloadSource))
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "保存失败。");
