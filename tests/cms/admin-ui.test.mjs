@@ -1,7 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { buildAdminSavePayload, getAdminPagination, pickDirtyAdminFields, resourceFromAdminPath, resourceItemKey, resourcePrimaryKey } from "../../src/app/admin/AdminCmsClient.tsx";
+import {
+  buildAdminSavePayload,
+  getAdminPagination,
+  normalizeSpecRowsJson,
+  normalizeStringArrayJson,
+  pickDirtyAdminFields,
+  resourceFromAdminPath,
+  resourceItemKey,
+  resourcePrimaryKey,
+  stringifyAdminJson
+} from "../../src/app/admin/AdminCmsClient.tsx";
 
 test("workflow resource save payload omits server-managed status fields", () => {
   const payload = buildAdminSavePayload("articles", {
@@ -91,4 +101,26 @@ test("admin UI paginates long resource lists", () => {
     endIndex: 0,
     pageSize: 20
   });
+});
+
+test("admin UI normalizes product string array JSON fields", () => {
+  assert.deepEqual(normalizeStringArrayJson('["one","two"]'), ["one", "two"]);
+  assert.deepEqual(normalizeStringArrayJson(["one", 2]), ["one", "2"]);
+  assert.deepEqual(normalizeStringArrayJson(""), []);
+  assert.equal(normalizeStringArrayJson("{ bad json"), null);
+  assert.equal(normalizeStringArrayJson('{"label":"not an array"}'), null);
+});
+
+test("admin UI normalizes product specification JSON rows", () => {
+  assert.deepEqual(normalizeSpecRowsJson('[{"label":"材质","value":"以官方页面为准"}]'), [
+    { label: "材质", value: "以官方页面为准" }
+  ]);
+  assert.deepEqual(normalizeSpecRowsJson(["护理说明"]), [{ label: "", value: "护理说明" }]);
+  assert.deepEqual(normalizeSpecRowsJson(""), []);
+  assert.equal(normalizeSpecRowsJson("{ bad json"), null);
+  assert.equal(normalizeSpecRowsJson('{"label":"not an array"}'), null);
+});
+
+test("admin UI writes structured JSON with stable formatting", () => {
+  assert.equal(stringifyAdminJson(["清洁收纳", "官方渠道"]), '[\n  "清洁收纳",\n  "官方渠道"\n]');
 });

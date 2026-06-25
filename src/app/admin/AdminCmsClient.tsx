@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 type Field = {
@@ -91,6 +91,47 @@ export function buildAdminSavePayload(resource: string, form: Record<string, unk
 
 export function pickDirtyAdminFields(form: Record<string, unknown>, dirtyFields: Iterable<string>) {
   return Object.fromEntries(Array.from(dirtyFields).filter((key) => Object.hasOwn(form, key)).map((key) => [key, form[key]]));
+}
+
+function parseJsonValue(value: unknown) {
+  if (value == null || value === "") return null;
+  if (typeof value !== "string") return value;
+  return JSON.parse(value);
+}
+
+export function normalizeStringArrayJson(value: unknown) {
+  try {
+    const parsed = parseJsonValue(value);
+    if (parsed == null) return [];
+    if (!Array.isArray(parsed)) return null;
+    return parsed.map((item) => String(item ?? ""));
+  } catch {
+    return null;
+  }
+}
+
+export function normalizeSpecRowsJson(value: unknown) {
+  try {
+    const parsed = parseJsonValue(value);
+    if (parsed == null) return [];
+    if (!Array.isArray(parsed)) return null;
+    return parsed.map((item) => {
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        const row = item as Record<string, unknown>;
+        return {
+          label: String(row.label ?? ""),
+          value: String(row.value ?? "")
+        };
+      }
+      return { label: "", value: String(item ?? "") };
+    });
+  } catch {
+    return null;
+  }
+}
+
+export function stringifyAdminJson(value: unknown) {
+  return JSON.stringify(value, null, 2);
 }
 
 const adminPathResources = [
@@ -714,6 +755,114 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
   return <input value={String(value ?? "")} onChange={(event) => onChange(field.type === "number" ? Number(event.target.value) : event.target.value)} type={field.type === "datetime" ? "datetime-local" : field.type === "number" ? "number" : "text"} className={`${base} h-10`} />;
 }
 
+function JsonEditorShell({ field, children }: { field: Field; children: ReactNode }) {
+  return (
+    <label key={field.name} className="grid gap-1.5">
+      <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
+      {children}
+    </label>
+  );
+}
+
+function StringArrayJsonEditor({
+  field,
+  value,
+  onChange,
+  previewImages = false
+}: {
+  field: Field;
+  value: unknown;
+  onChange: (value: unknown) => void;
+  previewImages?: boolean;
+}) {
+  const items = normalizeStringArrayJson(value);
+  const base = "rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none focus:border-mint-300/60";
+  if (!items) {
+    return (
+      <JsonEditorShell field={field}>
+        <div className="grid gap-2">
+          <div className="rounded-lg border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-xs font-bold text-amber-100">当前 JSON 不是数组格式，已切换为原始编辑。</div>
+          <textarea value={String(value ?? "")} onChange={(event) => onChange(event.target.value)} rows={5} className={`${base} py-2 leading-6`} />
+        </div>
+      </JsonEditorShell>
+    );
+  }
+  const write = (nextItems: string[]) => onChange(stringifyAdminJson(nextItems));
+  return (
+    <JsonEditorShell field={field}>
+      <div className="grid gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-2">
+        {items.length ? items.map((item, index) => (
+          <div key={`${field.name}-${index}`} className="grid gap-2 md:grid-cols-[1fr_auto]">
+            <div className="flex gap-2">
+              {previewImages && item ? <AdminThumbnail url={item} alt={`${field.label} ${index + 1}`} /> : null}
+              <input
+                value={item}
+                onChange={(event) => write(items.map((current, currentIndex) => (currentIndex === index ? event.target.value : current)))}
+                className={`${base} h-10 min-w-0 flex-1`}
+                placeholder={previewImages ? "图片 URL" : "填写一条内容"}
+              />
+            </div>
+            <button type="button" onClick={() => write(items.filter((_, currentIndex) => currentIndex !== index))} className="rounded-lg border border-white/12 px-3 py-2 text-xs font-black text-white/68 hover:bg-white/8">
+              删除
+            </button>
+          </div>
+        )) : (
+          <div className="rounded-lg border border-dashed border-white/12 px-3 py-4 text-center text-xs font-bold text-white/42">暂无内容，点击下方添加。</div>
+        )}
+        <button type="button" onClick={() => write([...items, ""])} className="rounded-lg bg-mint-300 px-3 py-2 text-xs font-black text-[#12031d]">
+          添加一项
+        </button>
+      </div>
+    </JsonEditorShell>
+  );
+}
+
+function SpecRowsJsonEditor({ field, value, onChange }: { field: Field; value: unknown; onChange: (value: unknown) => void }) {
+  const rows = normalizeSpecRowsJson(value);
+  const base = "rounded-lg border border-white/12 bg-[#160722] px-3 text-sm text-white outline-none focus:border-mint-300/60";
+  if (!rows) {
+    return (
+      <JsonEditorShell field={field}>
+        <div className="grid gap-2">
+          <div className="rounded-lg border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-xs font-bold text-amber-100">当前 JSON 不是规格数组，已切换为原始编辑。</div>
+          <textarea value={String(value ?? "")} onChange={(event) => onChange(event.target.value)} rows={5} className={`${base} py-2 leading-6`} />
+        </div>
+      </JsonEditorShell>
+    );
+  }
+  const write = (nextRows: { label: string; value: string }[]) => onChange(stringifyAdminJson(nextRows));
+  return (
+    <JsonEditorShell field={field}>
+      <div className="grid gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-2">
+        {rows.length ? rows.map((row, index) => (
+          <div key={`${field.name}-${index}`} className="grid gap-2 md:grid-cols-[1fr_1.4fr_auto]">
+            <input
+              value={row.label}
+              onChange={(event) => write(rows.map((current, currentIndex) => (currentIndex === index ? { ...current, label: event.target.value } : current)))}
+              className={`${base} h-10`}
+              placeholder="规格名，如 材质"
+            />
+            <input
+              value={row.value}
+              onChange={(event) => write(rows.map((current, currentIndex) => (currentIndex === index ? { ...current, value: event.target.value } : current)))}
+              className={`${base} h-10`}
+              placeholder="规格值"
+            />
+            <button type="button" onClick={() => write(rows.filter((_, currentIndex) => currentIndex !== index))} className="rounded-lg border border-white/12 px-3 py-2 text-xs font-black text-white/68 hover:bg-white/8">
+              删除
+            </button>
+          </div>
+        )) : (
+          <div className="rounded-lg border border-dashed border-white/12 px-3 py-4 text-center text-xs font-bold text-white/42">暂无规格，点击下方添加。</div>
+        )}
+        <button type="button" onClick={() => write([...rows, { label: "", value: "" }])} className="rounded-lg bg-mint-300 px-3 py-2 text-xs font-black text-[#12031d]">
+          添加规格
+        </button>
+      </div>
+    </JsonEditorShell>
+  );
+}
+
 function fieldByName(fields: Field[], name: string) {
   return fields.find((field) => field.name === name);
 }
@@ -813,6 +962,15 @@ function ProductEditorPanel({
     }
     if (name === "series_id") {
       return renderLookupField(field, seriesOptions, "请选择产品系列");
+    }
+    if (["highlights_json", "concerns_json"].includes(name)) {
+      return <StringArrayJsonEditor key={name} field={field} value={form[name]} onChange={(value) => setField(name, value)} />;
+    }
+    if (name === "gallery_json") {
+      return <StringArrayJsonEditor key={name} field={field} value={form[name]} onChange={(value) => setField(name, value)} previewImages />;
+    }
+    if (name === "specifications_json") {
+      return <SpecRowsJsonEditor key={name} field={field} value={form[name]} onChange={(value) => setField(name, value)} />;
     }
     return (
       <label key={name} className="grid gap-1.5">
