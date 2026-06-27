@@ -64,6 +64,9 @@ export function publicD1Enabled(resource?: string) {
   if (resource === "products" && process.env.CMS_PUBLIC_PRODUCTS_D1_READS === "true") {
     return true;
   }
+  if (resource === "articles" && process.env.CMS_PUBLIC_ARTICLES_D1_READS === "true") {
+    return true;
+  }
   return process.env.CMS_PUBLIC_D1_READS === "true";
 }
 

@@ -20,6 +20,7 @@
     "CMS_ENVIRONMENT": "production",
     "CMS_PUBLIC_D1_READS": "false",
     "CMS_PUBLIC_PRODUCTS_D1_READS": "true",
+    "CMS_PUBLIC_ARTICLES_D1_READS": "true",
     "CMS_IMPORT_ENABLE": "true",
     "CMS_IMPORT_MAX_URLS_PER_BATCH": "50",
     "CMS_IMPORT_FETCH_TIMEOUT_MS": "8000",

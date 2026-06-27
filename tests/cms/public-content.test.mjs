@@ -57,6 +57,38 @@ test("public product D1 reads can be enabled without enabling global public D1 r
   process.env.CMS_PUBLIC_PRODUCTS_D1_READS = oldProducts;
 });
 
+test("public article D1 reads can be enabled without enabling global public D1 reads", async () => {
+  const old = process.env.CMS_PUBLIC_D1_READS;
+  const oldArticles = process.env.CMS_PUBLIC_ARTICLES_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "false";
+  process.env.CMS_PUBLIC_ARTICLES_D1_READS = "true";
+  setCmsBindingsForTest({
+    CMS_DB: {
+      prepare(sql) {
+        return {
+          bind() {
+            return this;
+          },
+          async all() {
+            if (/FROM "articles"/.test(sql)) return { results: [{ slug: "d1-article", status: "published" }], success: true, meta: {} };
+            return { results: [], success: true, meta: {} };
+          }
+        };
+      }
+    }
+  });
+
+  const articles = await readPublicCmsRows("articles");
+  const nav = await readPublicCmsRows("navigation_items");
+  assert.equal(articles.source, "d1");
+  assert.equal(articles.rows[0].slug, "d1-article");
+  assert.deepEqual(nav, { rows: [], dbReady: false, source: "fallback", fallbackReason: "feature_disabled" });
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = old;
+  process.env.CMS_PUBLIC_ARTICLES_D1_READS = oldArticles;
+});
+
 test("public visibility where clause excludes drafts, pending review, offline, archived and future scheduled content", () => {
   const articleWhere = publicVisibilityWhere("articles");
   assert.match(articleWhere, /status IN \('published'\)/);
