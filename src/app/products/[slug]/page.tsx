@@ -5,16 +5,81 @@ import { ImageFrame } from "@/components/ImageFrame";
 import { ProductChannelButtons } from "@/components/ProductChannelButtons";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TrackView } from "@/components/TrackView";
+import { getPublishedArticles, type Article } from "@/lib/articles";
 import { getPublicProductBySlugWithCmsFallback, getPublicSeriesWithCmsFallback } from "@/lib/cms/public-products";
 import {
   getPublicCatalogProducts
 } from "@/lib/catalog";
 import { publicProductSeoDescription } from "@/lib/public-seo-copy";
 import { canonicalPath } from "@/lib/seo";
+import type { PublicCatalogProduct } from "@/types/catalog";
 
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+const coreArticleSlugs = [
+  "cleaning-and-storage-guide",
+  "privacy-shipping-guide",
+  "tpe-vs-silicone-material-guide",
+  "mold-products-care-guide",
+  "how-to-choose-cup-products"
+];
+
+function getRelatedArticleSlugs(product: PublicCatalogProduct, seriesName: string) {
+  const context = [
+    product.slug,
+    product.displayName,
+    product.shortName,
+    product.primaryCategoryId,
+    product.subcategoryId || "",
+    product.seriesId || "",
+    seriesName,
+    product.heroLine,
+    ...product.publicTags
+  ]
+    .join(" ")
+    .toLowerCase();
+  const slugs = new Set<string>();
+
+  if (product.primaryCategoryId === "masturbator-cups" || context.includes("cup") || context.includes("飞机杯")) {
+    slugs.add("how-to-choose-cup-products");
+  }
+
+  if (
+    product.primaryCategoryId === "intimate-molds" ||
+    context.includes("mold") ||
+    context.includes("hip") ||
+    context.includes("half-body") ||
+    context.includes("leg") ||
+    context.includes("倒模") ||
+    context.includes("臀") ||
+    context.includes("半身") ||
+    context.includes("腿")
+  ) {
+    slugs.add("mold-products-care-guide");
+  }
+
+  if (context.includes("tpe") || context.includes("silicone") || context.includes("硅胶")) {
+    slugs.add("tpe-vs-silicone-material-guide");
+  }
+
+  slugs.add("cleaning-and-storage-guide");
+  slugs.add("privacy-shipping-guide");
+
+  for (const slug of coreArticleSlugs) {
+    slugs.add(slug);
+  }
+
+  return [...slugs].slice(0, 3);
+}
+
+function getProductRelatedArticles(articles: Article[], product: PublicCatalogProduct, seriesName: string) {
+  const articlesBySlug = new Map(articles.map((article) => [article.slug, article]));
+  return getRelatedArticleSlugs(product, seriesName)
+    .map((slug) => articlesBySlug.get(slug))
+    .filter((article): article is Article => Boolean(article));
+}
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,8 +118,9 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   }
 
   const isUpcoming = product.status === "upcoming";
-  const series = await getPublicSeriesWithCmsFallback();
+  const [series, articles] = await Promise.all([getPublicSeriesWithCmsFallback(), getPublishedArticles()]);
   const seriesName = series.find((item) => item.id === product.seriesId)?.name || "蜜女郎精选";
+  const relatedArticles = getProductRelatedArticles(articles, product, seriesName);
   const safeDescription = publicProductSeoDescription({ displayName: product.displayName, status: product.status });
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -168,6 +234,40 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           </div>
         </div>
       </section>
+
+      {relatedArticles.length > 0 ? (
+        <section className="bg-white/[0.03] py-14 md:py-20">
+          <div className="container-shell">
+            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <SectionHeader
+                eyebrow="Related Guides"
+                title="购买前可以先看这几篇"
+                description="从材质区别、清洁收纳、隐私发货和日常保养几个角度，补充商品页之外的参考信息。"
+              />
+              <Link
+                href="/articles"
+                className="focus-ring inline-flex items-center gap-1 rounded-full border border-white/12 px-4 py-3 text-sm font-bold text-aura/80 transition hover:bg-white/8 hover:text-white"
+              >
+                查看全部文章
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {relatedArticles.map((article) => (
+                <Link
+                  key={article.slug}
+                  href={`/articles/${article.slug}`}
+                  className="rounded-[26px] border border-white/10 bg-plum-950/48 p-5 transition hover:-translate-y-1 hover:border-mint-300/34"
+                >
+                  <p className="text-xs font-black text-mint-300">{article.category}</p>
+                  <h3 className="mt-3 text-xl font-black leading-snug text-white">{article.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-aura/62">{article.description}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="container-shell pb-16">
         <div className="rounded-[34px] border border-mint-300/22 bg-hero-radial p-6 md:p-10">

@@ -380,8 +380,8 @@ export default async function HomePage() {
               <span aria-hidden>›</span>
             </Link>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {homeArticles.slice(0, 3).map((article) => (
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {homeArticles.slice(0, 5).map((article) => (
               <Link key={article.slug} href={`/articles/${article.slug}`} className="rounded-[26px] border border-white/10 bg-plum-950/48 p-5 transition hover:-translate-y-1 hover:border-mint-300/34">
                 <p className="text-xs font-black text-mint-300">{article.category}</p>
                 <h3 className="mt-3 text-xl font-black leading-snug text-white">{article.title}</h3>
