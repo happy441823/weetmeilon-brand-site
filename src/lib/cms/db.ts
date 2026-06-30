@@ -1,7 +1,7 @@
 import { getCmsDb, getCmsMediaBucket } from "./env";
 import { cmsBackupTables } from "./backup";
 import { getResourceConfig, type CmsField } from "./schema";
-import { assertSafeUrl, markdownSourceToHtml, normalizeCmsFieldValue, normalizeJsonText, slugify } from "./validation";
+import { assertAsciiKebabSlug, assertSafeUrl, markdownSourceToHtml, normalizeCmsFieldValue, normalizeJsonText, slugify } from "./validation";
 import { validatePublishQuality } from "./workflow";
 
 type QueryOptions = {
@@ -93,7 +93,7 @@ async function assertMutableSystemRole(db: { prepare(sql: string): { bind(...val
   }
 }
 
-function normalizeFieldValue(field: CmsField, value: unknown) {
+function normalizeFieldValue(resource: string, field: CmsField, value: unknown) {
   if (field.type === "boolean") {
     return value === true || value === "true" || value === "1" || value === 1 ? 1 : 0;
   }
@@ -108,6 +108,9 @@ function normalizeFieldValue(field: CmsField, value: unknown) {
     return normalizeCmsFieldValue(field.name, value, "");
   }
   if (field.name === "slug") {
+    if (resource === "products") {
+      return assertAsciiKebabSlug(value, "Product slug");
+    }
     return slugify(String(value || ""));
   }
   if (field.name === "href" || field.name.endsWith("_url") || field.name === "canonical_url" || field.name === "destination_url") {
@@ -127,7 +130,7 @@ function preparePayload(resource: string, input: Record<string, unknown>) {
     if (field.readonly || !(field.name in input)) {
       continue;
     }
-    const value = normalizeFieldValue(field, input[field.name]);
+    const value = normalizeFieldValue(resource, field, input[field.name]);
     if (field.required && (value === "" || value == null)) {
       throw new Error(`${field.label} 不能为空。`);
     }
@@ -139,6 +142,9 @@ function preparePayload(resource: string, input: Record<string, unknown>) {
   }
   if ("title" in payload && !("slug" in payload) && config.fields.some((field) => field.name === "slug")) {
     payload.slug = slugify(String(payload.title));
+  }
+  if (resource === "products" && "slug" in payload) {
+    payload.slug = assertAsciiKebabSlug(payload.slug, "Product slug");
   }
   if ("markdown_source" in payload && !("body_html" in payload) && config.fields.some((field) => field.name === "body_html")) {
     payload.body_html = markdownSourceToHtml(payload.markdown_source);

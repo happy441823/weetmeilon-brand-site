@@ -32,6 +32,14 @@ export function slugify(input: string) {
     .slice(0, 90);
 }
 
+export function assertAsciiKebabSlug(value: unknown, label = "Slug") {
+  const slug = String(value || "").trim();
+  if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    throw new Error(`${label} format is invalid. Use lowercase letters, numbers, and hyphens.`);
+  }
+  return slug;
+}
+
 export function sanitizeText(input: unknown) {
   return typeof input === "string" ? input.trim() : "";
 }
