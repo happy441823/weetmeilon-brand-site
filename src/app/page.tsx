@@ -7,7 +7,7 @@ import { StoreButtons } from "@/components/StoreButtons";
 import { TrackView } from "@/components/TrackView";
 import { TrustStrip } from "@/components/TrustStrip";
 import { BRAND, complianceNote, trustPoints } from "@/lib/constants";
-import { getPublishedArticles, pickHomepageArticles } from "@/lib/articles";
+import { articleGuideGroups, getPublishedArticles, pickHomepageArticles } from "@/lib/articles";
 import { readPublicCmsRows } from "@/lib/cms/public-content";
 import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback } from "@/lib/cms/public-products";
 import { pickHomeBrowseCategories } from "@/lib/home-categories";
@@ -200,6 +200,41 @@ export default async function HomePage() {
       </section>
 
       <TrustStrip />
+
+      <section className="container-shell py-14 md:py-20">
+        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <SectionHeader
+            eyebrow="Guide Hub"
+            title="选购与护理指南"
+            description="从材质区别、清洁收纳、隐私发货、产品选择和官方渠道开始，先把购买前最容易纠结的问题讲清楚。"
+          />
+          <Link href="/articles" className="focus-ring inline-flex items-center gap-1 rounded-full border border-white/12 px-4 py-3 text-sm font-bold text-aura/80 transition hover:bg-white/8 hover:text-white">
+            进入内容中心
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {articleGuideGroups.slice(0, 5).map((group) => (
+            <Link
+              key={group.key}
+              href={`/articles#${group.key}`}
+              className="rounded-[26px] border border-white/10 bg-plum-950/48 p-5 transition hover:-translate-y-1 hover:border-mint-300/34"
+            >
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">Guide</p>
+              <h3 className="mt-3 text-2xl font-black leading-tight text-white">{group.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-aura/62">{group.description}</p>
+            </Link>
+          ))}
+          <Link
+            href="/faq"
+            className="rounded-[26px] border border-white/10 bg-white/[0.055] p-5 transition hover:-translate-y-1 hover:border-mint-300/34"
+          >
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-mint-300">FAQ</p>
+            <h3 className="mt-3 text-2xl font-black leading-tight text-white">常见问题</h3>
+            <p className="mt-3 text-sm leading-7 text-aura/62">把材质、清洁、隐私、购买渠道和售后说明集中整理，方便快速确认。</p>
+          </Link>
+        </div>
+      </section>
 
       <CmsHomepageSections sections={homepageSections} />
 

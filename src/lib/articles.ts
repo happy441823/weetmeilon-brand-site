@@ -37,6 +37,39 @@ export const articleDisplayPrioritySlugs = [
 
 const articleDisplayPriority = new Map(articleDisplayPrioritySlugs.map((slug, index) => [slug, index]));
 
+export const articleGuideGroups = [
+  {
+    key: "material",
+    title: "材质知识",
+    description: "先理解 TPE、硅胶、表面细节和材质体验方向，再回到具体商品页确认规格。",
+    slugs: ["tpe-vs-silicone-material-guide", "material-photo-checklist", "native-skin-silicone-meaning"]
+  },
+  {
+    key: "care",
+    title: "清洁收纳",
+    description: "围绕使用前后清洁、充分晾干、单独收纳和日常检查，建立更稳定的护理习惯。",
+    slugs: ["cleaning-and-storage-guide", "weekly-care-routine", "mold-products-care-guide"]
+  },
+  {
+    key: "privacy",
+    title: "隐私购买",
+    description: "关注包装、面单、物流通知、收货安排和售后沟通中的隐私边界。",
+    slugs: ["privacy-shipping-guide", "official-site-to-tmall"]
+  },
+  {
+    key: "choice",
+    title: "选购参考",
+    description: "从产品类型、材质体验、护理难度和官方渠道信息出发，降低新手选择成本。",
+    slugs: ["how-to-choose-cup-products", "beginner-buying-questions", "product-info-before-buying"]
+  },
+  {
+    key: "official",
+    title: "官方渠道",
+    description: "官网负责讲清楚稳定信息，具体商品、发货与售后以官方旗舰店页面为准。",
+    slugs: ["official-site-to-tmall", "product-info-before-buying", "privacy-shipping-guide"]
+  }
+];
+
 const defaultDraftSections: ArticleSection[] = [
   {
     heading: "先确认这篇内容适合解决什么问题",
@@ -278,6 +311,38 @@ export function sortArticlesForDisplay(input: Article[]) {
 
 export function pickHomepageArticles(input: Article[], limit = 5) {
   return sortArticlesForDisplay(input).slice(0, limit);
+}
+
+export function groupArticlesForGuideHub(input: Article[]) {
+  const sorted = sortArticlesForDisplay(input);
+  const bySlug = new Map(sorted.map((article) => [article.slug, article]));
+  const used = new Set<string>();
+  const groups = articleGuideGroups
+    .map((group) => {
+      const articles = group.slugs
+        .map((slug) => bySlug.get(slug))
+        .filter((article): article is Article => Boolean(article))
+        .filter((article) => {
+          if (used.has(article.slug)) return false;
+          used.add(article.slug);
+          return true;
+        });
+      return { ...group, articles };
+    })
+    .filter((group) => group.articles.length > 0);
+
+  const remaining = sorted.filter((article) => !used.has(article.slug));
+  if (remaining.length > 0) {
+    groups.push({
+      key: "more",
+      title: "更多指南",
+      description: "补充品牌、材质、购买前确认和日常护理相关内容。",
+      slugs: remaining.map((article) => article.slug),
+      articles: remaining
+    });
+  }
+
+  return groups;
 }
 
 function escapeHtml(input: unknown) {

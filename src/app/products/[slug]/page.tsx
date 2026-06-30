@@ -84,7 +84,7 @@ function getRelatedArticleSlugs(product: PublicCatalogProduct, seriesName: strin
     slugs.add(slug);
   }
 
-  return [...slugs].slice(0, 3);
+  return [...slugs].slice(0, 4);
 }
 
 function getProductRelatedArticles(articles: Article[], product: PublicCatalogProduct, seriesName: string) {
@@ -265,7 +265,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                 <span aria-hidden>→</span>
               </Link>
             </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {relatedArticles.map((article) => (
                 <Link
                   key={article.slug}

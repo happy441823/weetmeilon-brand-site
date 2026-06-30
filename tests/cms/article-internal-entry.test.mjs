@@ -9,9 +9,16 @@ const productPageSource = readFileSync("src/app/products/[slug]/page.tsx", "utf8
 
 test("homepage exposes prioritized article entry points", () => {
   assert.match(homePageSource, /pickHomepageArticles\(homeArticles,\s*5\)/);
+  assert.match(homePageSource, /articleGuideGroups/);
+  assert.match(homePageSource, /Guide Hub/);
   assert.match(homePageSource, /href="\/articles"/);
   assert.match(articlesPageSource, /sortArticlesForDisplay/);
+  assert.match(articlesPageSource, /groupArticlesForGuideHub/);
   assert.match(articlesSource, /articleDisplayPrioritySlugs/);
+  assert.match(articlesSource, /articleGuideGroups/);
+  assert.match(articlesSource, /key:\s*"material"/);
+  assert.match(articlesSource, /key:\s*"care"/);
+  assert.match(articlesSource, /key:\s*"privacy"/);
   assert.match(articlesSource, /"official-site-to-tmall"/);
   assert.match(articlesSource, /"beginner-buying-questions"/);
 });
@@ -19,6 +26,8 @@ test("homepage exposes prioritized article entry points", () => {
 test("product detail pages render contextual article entry points", () => {
   assert.match(productPageSource, /getPublishedArticles/);
   assert.match(productPageSource, /getProductRelatedArticles/);
+  assert.match(productPageSource, /slice\(0,\s*4\)/);
+  assert.match(productPageSource, /lg:grid-cols-4/);
   assert.match(productPageSource, /Related Guides/);
   assert.match(productPageSource, /official-site-to-tmall/);
   assert.match(productPageSource, /beginner-buying-questions/);
