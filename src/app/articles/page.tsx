@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreButtons } from "@/components/StoreButtons";
-import { getPublishedArticles } from "@/lib/articles";
+import { getPublishedArticles, sortArticlesForDisplay } from "@/lib/articles";
 import { withCanonical } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export const metadata: Metadata = withCanonical({
 }, "/articles");
 
 export default async function ArticlesPage() {
-  const publishedArticles = await getPublishedArticles();
+  const publishedArticles = sortArticlesForDisplay(await getPublishedArticles());
 
   return (
     <main>

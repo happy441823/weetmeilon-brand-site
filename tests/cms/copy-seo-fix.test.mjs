@@ -102,7 +102,7 @@ test("Product JSON-LD does not output unstable commerce fields", () => {
 
 test("draft articles have review-ready body sections and are not published", () => {
   const drafts = articles.filter((article) => article.status === "draft");
-  assert.ok(drafts.length >= 6);
+  assert.ok(drafts.length >= 1);
   for (const article of drafts) {
     assert.equal(article.indexable, false, article.slug);
     assert.ok(article.sections.length >= 3, article.slug);

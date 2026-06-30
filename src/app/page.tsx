@@ -7,7 +7,7 @@ import { StoreButtons } from "@/components/StoreButtons";
 import { TrackView } from "@/components/TrackView";
 import { TrustStrip } from "@/components/TrustStrip";
 import { BRAND, complianceNote, trustPoints } from "@/lib/constants";
-import { getPublishedArticles } from "@/lib/articles";
+import { getPublishedArticles, pickHomepageArticles } from "@/lib/articles";
 import { readPublicCmsRows } from "@/lib/cms/public-content";
 import { getPublicCategoriesWithCmsFallback, getPublicProductsWithCmsFallback } from "@/lib/cms/public-products";
 import { pickHomeBrowseCategories } from "@/lib/home-categories";
@@ -153,6 +153,7 @@ export default async function HomePage() {
   const upcomingProducts = products.filter((product) => product.status === "upcoming" && product.featured).slice(0, 3);
   const activeProducts = products.filter((product) => product.status === "active" && product.featured).slice(0, 4);
   const categoryGroups = buildCategoryBrowseGroups(visibleCategories, products);
+  const homepageArticleCards = pickHomepageArticles(homeArticles, 5);
 
   return (
     <main>
@@ -381,7 +382,7 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {homeArticles.slice(0, 5).map((article) => (
+            {homepageArticleCards.map((article) => (
               <Link key={article.slug} href={`/articles/${article.slug}`} className="rounded-[26px] border border-white/10 bg-plum-950/48 p-5 transition hover:-translate-y-1 hover:border-mint-300/34">
                 <p className="text-xs font-black text-mint-300">{article.category}</p>
                 <h3 className="mt-3 text-xl font-black leading-snug text-white">{article.title}</h3>

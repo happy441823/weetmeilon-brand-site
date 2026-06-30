@@ -22,6 +22,21 @@ export type Article = {
   renderedHtml?: string;
 };
 
+export const articleDisplayPrioritySlugs = [
+  "official-site-to-tmall",
+  "beginner-buying-questions",
+  "tpe-vs-silicone-material-guide",
+  "how-to-choose-cup-products",
+  "cleaning-and-storage-guide",
+  "privacy-shipping-guide",
+  "product-info-before-buying",
+  "material-photo-checklist",
+  "mold-products-care-guide",
+  "weekly-care-routine"
+];
+
+const articleDisplayPriority = new Map(articleDisplayPrioritySlugs.map((slug, index) => [slug, index]));
+
 const defaultDraftSections: ArticleSection[] = [
   {
     heading: "先确认这篇内容适合解决什么问题",
@@ -185,8 +200,8 @@ export const articles: Article[] = [
     outline: ["官网主要提供哪些信息", "官方旗舰店提供哪些购买服务", "交易与售后为什么以平台为准", "如何选择天猫或京东入口"],
     sections: defaultDraftSections,
     readMinutes: 3,
-    status: "draft",
-    indexable: false
+    status: "published",
+    indexable: true
   },
   {
     slug: "material-photo-checklist",
@@ -197,8 +212,8 @@ export const articles: Article[] = [
     outline: ["先看表面是否细腻均匀", "再看边缘过渡是否自然", "关注光泽和纹理层次", "结合清洁说明一起判断"],
     sections: defaultDraftSections,
     readMinutes: 4,
-    status: "draft",
-    indexable: false
+    status: "published",
+    indexable: true
   },
   {
     slug: "beginner-buying-questions",
@@ -209,8 +224,8 @@ export const articles: Article[] = [
     outline: ["材质体验应该怎么看", "隐私发货需要确认什么", "清洁收纳有哪些基础动作", "官方购买渠道在哪里"],
     sections: defaultDraftSections,
     readMinutes: 5,
-    status: "draft",
-    indexable: false
+    status: "published",
+    indexable: true
   },
   {
     slug: "new-product-native-skin-silicone",
@@ -233,8 +248,8 @@ export const articles: Article[] = [
     outline: ["先看规格和材质说明", "确认包装和发货规则", "查看清洁与收纳建议", "发货与售后以旗舰店为准"],
     sections: defaultDraftSections,
     readMinutes: 4,
-    status: "draft",
-    indexable: false
+    status: "published",
+    indexable: true
   },
   {
     slug: "weekly-care-routine",
@@ -245,12 +260,25 @@ export const articles: Article[] = [
     outline: ["每次使用后的基础动作", "充分晾干后再收纳", "单独收纳和避光放置", "定期查看表面状态"],
     sections: defaultDraftSections,
     readMinutes: 4,
-    status: "draft",
-    indexable: false
+    status: "published",
+    indexable: true
   }
 ];
 
 export const publishedArticles = articles.filter((article) => article.status === "published" && article.indexable);
+
+export function sortArticlesForDisplay(input: Article[]) {
+  return [...input].sort((a, b) => {
+    const priorityA = articleDisplayPriority.get(a.slug) ?? 1000;
+    const priorityB = articleDisplayPriority.get(b.slug) ?? 1000;
+    if (priorityA !== priorityB) return priorityA - priorityB;
+    return a.title.localeCompare(b.title, "zh-Hans-CN");
+  });
+}
+
+export function pickHomepageArticles(input: Article[], limit = 5) {
+  return sortArticlesForDisplay(input).slice(0, limit);
+}
 
 function escapeHtml(input: unknown) {
   return String(input || "")
@@ -332,7 +360,7 @@ export function articleFromCms(row: Record<string, unknown>): Article {
 export async function getPublishedArticles() {
   const result = await readPublicCmsRows<Record<string, unknown>>("articles");
   const cmsArticles = result.rows.map(articleFromCms).filter((article) => article.slug && article.title && article.indexable);
-  return cmsArticles.length > 0 ? cmsArticles : publishedArticles;
+  return sortArticlesForDisplay(cmsArticles.length > 0 ? cmsArticles : publishedArticles);
 }
 
 export function getArticle(slug: string) {

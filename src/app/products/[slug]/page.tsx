@@ -19,11 +19,16 @@ type ProductPageProps = {
 };
 
 const coreArticleSlugs = [
+  "official-site-to-tmall",
+  "beginner-buying-questions",
+  "product-info-before-buying",
   "cleaning-and-storage-guide",
   "privacy-shipping-guide",
   "tpe-vs-silicone-material-guide",
+  "material-photo-checklist",
   "mold-products-care-guide",
-  "how-to-choose-cup-products"
+  "how-to-choose-cup-products",
+  "weekly-care-routine"
 ];
 
 function getRelatedArticleSlugs(product: PublicCatalogProduct, seriesName: string) {
@@ -44,6 +49,8 @@ function getRelatedArticleSlugs(product: PublicCatalogProduct, seriesName: strin
 
   if (product.primaryCategoryId === "masturbator-cups" || context.includes("cup") || context.includes("飞机杯")) {
     slugs.add("how-to-choose-cup-products");
+    slugs.add("beginner-buying-questions");
+    slugs.add("cleaning-and-storage-guide");
   }
 
   if (
@@ -58,12 +65,18 @@ function getRelatedArticleSlugs(product: PublicCatalogProduct, seriesName: strin
     context.includes("腿")
   ) {
     slugs.add("mold-products-care-guide");
+    slugs.add("material-photo-checklist");
+    slugs.add("weekly-care-routine");
   }
 
   if (context.includes("tpe") || context.includes("silicone") || context.includes("硅胶")) {
     slugs.add("tpe-vs-silicone-material-guide");
+    slugs.add("material-photo-checklist");
   }
 
+  slugs.add("official-site-to-tmall");
+  slugs.add("beginner-buying-questions");
+  slugs.add("product-info-before-buying");
   slugs.add("cleaning-and-storage-guide");
   slugs.add("privacy-shipping-guide");
 
