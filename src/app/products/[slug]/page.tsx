@@ -7,9 +7,6 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { TrackView } from "@/components/TrackView";
 import { getPublishedArticles, type Article } from "@/lib/articles";
 import { getPublicProductBySlugWithCmsFallback, getPublicSeriesWithCmsFallback } from "@/lib/cms/public-products";
-import {
-  getPublicCatalogProducts
-} from "@/lib/catalog";
 import { publicProductSeoDescription } from "@/lib/public-seo-copy";
 import { canonicalPath } from "@/lib/seo";
 import type { PublicCatalogProduct } from "@/types/catalog";
@@ -95,11 +92,8 @@ function getProductRelatedArticles(articles: Article[], product: PublicCatalogPr
 }
 
 export const dynamic = "force-dynamic";
+export const dynamicParams = true;
 export const revalidate = 0;
-
-export function generateStaticParams() {
-  return getPublicCatalogProducts().map((product) => ({ slug: product.slug }));
-}
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;

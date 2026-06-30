@@ -5,6 +5,7 @@ import {
   buildAdminSavePayload,
   getAdminJsonFieldError,
   getAdminJsonFormError,
+  getAdminSlugFieldError,
   getAdminPagination,
   normalizeSpecRowsJson,
   normalizeStringArrayJson,
@@ -37,6 +38,21 @@ test("admin UI validates only structured product JSON fields present in the save
     }),
     /规格说明格式不正确/
   );
+});
+
+test("admin UI blocks invalid product slugs before saving", () => {
+  assert.match(getAdminSlugFieldError("products", { slug: "安心入门自动名器体验款" }), /Slug format is invalid/);
+  assert.match(getAdminSlugFieldError("products", { slug: "Half Body" }), /Slug format is invalid/);
+  assert.equal(getAdminSlugFieldError("products", { slug: "automatic-cup-974064324737" }), "");
+  assert.equal(getAdminSlugFieldError("articles", { slug: "中文文章" }), "");
+  assert.equal(getAdminSlugFieldError("products", { name: "Only changing a title" }), "");
+});
+
+test("product detail route remains dynamic for CMS slugs", () => {
+  const source = readFileSync("src/app/products/[slug]/page.tsx", "utf8");
+  assert.match(source, /export const dynamic = "force-dynamic"/);
+  assert.match(source, /export const dynamicParams = true/);
+  assert.doesNotMatch(source, /generateStaticParams\(/);
 });
 
 test("workflow resource save payload omits server-managed status fields", () => {

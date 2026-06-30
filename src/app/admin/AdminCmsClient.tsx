@@ -159,6 +159,16 @@ export function getAdminJsonFormError(resource: string, form: Record<string, unk
   return "";
 }
 
+export function getAdminSlugFieldError(resource: string, form: Record<string, unknown>) {
+  if (resource !== "products" || !Object.hasOwn(form, "slug")) return "";
+  const slug = String(form.slug || "").trim();
+  if (!slug) return "Slug cannot be empty. Use lowercase letters, numbers, and hyphens.";
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    return "Slug format is invalid. Use lowercase letters, numbers, and hyphens, for example automatic-cup-974064324737.";
+  }
+  return "";
+}
+
 const adminPathResources = [
   { path: "/admin/products", resource: "products" },
   { path: "/admin/articles", resource: "articles" },
@@ -409,6 +419,11 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
         const payloadSource = selected ? pickDirtyAdminFields(form, dirtyFields) : form;
         if (selected && Object.keys(payloadSource).length === 0) {
           setMessage("没有需要保存的修改。");
+          return;
+        }
+        const slugError = getAdminSlugFieldError(resource, payloadSource);
+        if (slugError) {
+          setMessage(slugError);
           return;
         }
         const jsonError = getAdminJsonFormError(resource, payloadSource);
