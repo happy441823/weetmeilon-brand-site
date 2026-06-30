@@ -9,9 +9,10 @@ type ImageFrameProps = {
   sizes: string;
   className?: string;
   imageClassName?: string;
+  fit?: "contain" | "cover";
 };
 
-export function ImageFrame({ src, alt, sizes, className = "", imageClassName = "" }: ImageFrameProps) {
+export function ImageFrame({ src, alt, sizes, className = "", imageClassName = "", fit = "contain" }: ImageFrameProps) {
   const [failed, setFailed] = useState(false);
 
   return (
@@ -23,7 +24,7 @@ export function ImageFrame({ src, alt, sizes, className = "", imageClassName = "
           alt={alt}
           fill
           sizes={sizes}
-          className={`relative z-10 object-contain transition duration-500 ${imageClassName}`}
+          className={`relative z-10 ${fit === "cover" ? "object-cover" : "object-contain"} transition duration-500 ${imageClassName}`}
           onError={() => setFailed(true)}
         />
       ) : null}
