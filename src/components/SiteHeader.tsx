@@ -61,6 +61,19 @@ export function SiteHeader({ items = navItems }: { items?: PublicChromeLink[] })
             <div className="absolute right-0 top-[calc(100%+10px)] z-[70] grid min-w-56 gap-2 rounded-3xl border border-white/12 bg-plum-950/96 p-3 shadow-purple backdrop-blur" role="menu">
               <StoreButton channel="tmall" source="header_dropdown" label="天猫旗舰店" className="w-full px-4 py-3" />
               <StoreButton channel="jd" source="header_dropdown" label="京东旗舰店" variant="secondary" className="w-full px-4 py-3" />
+              <div className="mt-1 grid grid-cols-[56px_1fr] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2">
+                <Image
+                  src="/images/wechat-qrcode.jpg"
+                  alt="蜜女郎官方微信公众号二维码"
+                  width={56}
+                  height={56}
+                  className="rounded-xl bg-white p-1"
+                />
+                <div>
+                  <p className="text-sm font-black text-white">微信公众号</p>
+                  <p className="mt-1 text-xs leading-5 text-aura/66">扫码关注，查看材质、清洁与隐私发货说明。</p>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
@@ -85,6 +98,19 @@ export function SiteHeader({ items = navItems }: { items?: PublicChromeLink[] })
           <div className="mt-3 rounded-3xl border border-white/10 bg-white/[0.04] p-3">
             <p className="mb-3 px-1 text-xs font-black uppercase tracking-[0.2em] text-mint-300">官方渠道购买</p>
             <StoreButtons source="mobile_header" className="sm:flex-col" buttonClassName="w-full" />
+            <div className="mt-3 grid grid-cols-[64px_1fr] items-center gap-3 rounded-2xl border border-white/10 bg-plum-900/55 p-2">
+              <Image
+                src="/images/wechat-qrcode.jpg"
+                alt="蜜女郎官方微信公众号二维码"
+                width={64}
+                height={64}
+                className="rounded-xl bg-white p-1"
+              />
+              <div>
+                <p className="text-sm font-black text-white">微信公众号</p>
+                <p className="mt-1 text-xs leading-5 text-aura/66">关注官方公众号，查看购买前指南。</p>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

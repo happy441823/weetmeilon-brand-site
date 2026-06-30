@@ -34,6 +34,19 @@ export async function SiteFooter() {
           </p>
         </div>
         <div className="grid gap-4 md:justify-items-end">
+          <div className="grid max-w-sm grid-cols-[88px_1fr] items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-3 text-left">
+            <Image
+              src="/images/wechat-qrcode.jpg"
+              alt="蜜女郎官方微信公众号二维码"
+              width={88}
+              height={88}
+              className="rounded-2xl bg-white p-1.5"
+            />
+            <div>
+              <p className="text-sm font-black text-white">关注官方公众号</p>
+              <p className="mt-2 text-xs leading-5 text-aura/68">查看材质说明、清洁收纳、隐私发货与新品内容。</p>
+            </div>
+          </div>
           <StoreButtons source="footer" />
           <div className="flex flex-wrap gap-3 text-[13px] text-aura/68">
             {links.map((item) => (
