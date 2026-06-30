@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   buildAdminSavePayload,
+  getAdminJsonFieldError,
+  getAdminJsonFormError,
   getAdminPagination,
   normalizeSpecRowsJson,
   normalizeStringArrayJson,
@@ -12,6 +14,30 @@ import {
   resourcePrimaryKey,
   stringifyAdminJson
 } from "../../src/app/admin/AdminCmsClient.tsx";
+
+test("admin UI reports product JSON field errors before saving", () => {
+  assert.match(getAdminJsonFieldError("products", "gallery_json", "{ bad json"), /商品图集格式不正确/);
+  assert.match(getAdminJsonFieldError("products", "specifications_json", '{"label":"not an array"}'), /规格说明格式不正确/);
+  assert.equal(getAdminJsonFieldError("products", "gallery_json", '["https://example.com/a.jpg"]'), "");
+  assert.equal(getAdminJsonFieldError("articles", "gallery_json", "{ bad json"), "");
+});
+
+test("admin UI validates only structured product JSON fields present in the save payload", () => {
+  assert.equal(
+    getAdminJsonFormError("products", {
+      name: "Only changing a title"
+    }),
+    ""
+  );
+  assert.match(
+    getAdminJsonFormError("products", {
+      name: "New product",
+      highlights_json: ["care"],
+      specifications_json: "{ bad json"
+    }),
+    /规格说明格式不正确/
+  );
+});
 
 test("workflow resource save payload omits server-managed status fields", () => {
   const payload = buildAdminSavePayload("articles", {

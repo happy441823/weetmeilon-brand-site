@@ -134,6 +134,31 @@ export function stringifyAdminJson(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
+export const productStructuredJsonFieldLabels: Record<string, string> = {
+  highlights_json: "产品亮点",
+  concerns_json: "用户关注",
+  gallery_json: "商品图集",
+  specifications_json: "规格说明"
+};
+
+export function getAdminJsonFieldError(resource: string, name: string, value: unknown) {
+  if (resource !== "products" || !(name in productStructuredJsonFieldLabels)) return "";
+  const label = productStructuredJsonFieldLabels[name];
+  if (name === "specifications_json") {
+    return normalizeSpecRowsJson(value) == null ? `${label}格式不正确：请使用规格名和规格值，或检查 JSON 数组。` : "";
+  }
+  return normalizeStringArrayJson(value) == null ? `${label}格式不正确：请使用每行一条内容，或检查 JSON 数组。` : "";
+}
+
+export function getAdminJsonFormError(resource: string, form: Record<string, unknown>) {
+  for (const name of Object.keys(productStructuredJsonFieldLabels)) {
+    if (!Object.hasOwn(form, name)) continue;
+    const error = getAdminJsonFieldError(resource, name, form[name]);
+    if (error) return error;
+  }
+  return "";
+}
+
 const adminPathResources = [
   { path: "/admin/products", resource: "products" },
   { path: "/admin/articles", resource: "articles" },
@@ -384,6 +409,11 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
         const payloadSource = selected ? pickDirtyAdminFields(form, dirtyFields) : form;
         if (selected && Object.keys(payloadSource).length === 0) {
           setMessage("没有需要保存的修改。");
+          return;
+        }
+        const jsonError = getAdminJsonFormError(resource, payloadSource);
+        if (jsonError) {
+          setMessage(jsonError);
           return;
         }
         const response = await fetch(url, {
