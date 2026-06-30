@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ImageFrame } from "@/components/ImageFrame";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StoreButtons } from "@/components/StoreButtons";
 import { TrackView } from "@/components/TrackView";
-import { getPublishedArticleBySlug, publishedArticles } from "@/lib/articles";
+import {
+  getPublishedArticleBySlug,
+  getPublishedArticles,
+  getRelatedArticlesForArticle,
+  getRelatedProductsForArticle,
+  publishedArticles
+} from "@/lib/articles";
+import { getPublicCatalogProducts } from "@/lib/catalog";
 import { canonicalPath } from "@/lib/seo";
 
 type ArticlePageProps = {
@@ -43,6 +51,10 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   if (!article) {
     notFound();
   }
+
+  const [allArticles, publicProducts] = await Promise.all([getPublishedArticles(), Promise.resolve(getPublicCatalogProducts())]);
+  const relatedArticles = getRelatedArticlesForArticle(article, allArticles, 3);
+  const relatedProducts = getRelatedProductsForArticle(article, publicProducts, 3);
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -122,6 +134,57 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
             </div>
           </aside>
         </div>
+
+        <section className="mt-12">
+          <SectionHeader eyebrow="Related Guides" title="继续了解" description="围绕同一购买前问题，继续查看材质、清洁、隐私和官方渠道说明。" />
+          <div className="mt-7 grid gap-4 md:grid-cols-3">
+            {relatedArticles.map((relatedArticle) => (
+              <Link
+                key={relatedArticle.slug}
+                href={`/articles/${relatedArticle.slug}`}
+                className="focus-ring rounded-[28px] border border-white/10 bg-white/[0.045] p-6 transition hover:-translate-y-1 hover:border-mint-300/40 hover:bg-white/[0.07]"
+              >
+                <p className="text-xs font-black uppercase tracking-[0.28em] text-mint-300">{relatedArticle.category}</p>
+                <h2 className="mt-4 text-xl font-black leading-snug text-white">{relatedArticle.title}</h2>
+                <p className="mt-3 line-clamp-3 text-sm leading-7 text-aura/64">{relatedArticle.description}</p>
+                <span className="mt-5 inline-flex text-sm font-black text-mint-300">阅读文章</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <SectionHeader eyebrow="Related Products" title="相关商品入口" description="文章只提供购买前说明，具体规格、发货和售后信息请以官方旗舰店页面为准。" />
+          <div className="mt-7 grid gap-5 md:grid-cols-3">
+            {relatedProducts.map((product) => (
+              <Link
+                key={product.slug}
+                href={`/products/${product.slug}`}
+                className="focus-ring overflow-hidden rounded-[28px] border border-white/10 bg-plum-950/50 transition hover:-translate-y-1 hover:border-mint-300/40"
+              >
+                <ImageFrame src={product.coverImage} alt={product.imageAlt} sizes="(min-width: 768px) 28vw, 92vw" className="aspect-[4/3]" imageClassName="p-5" />
+                <div className="p-6">
+                  <p className="text-xs font-black uppercase tracking-[0.26em] text-mint-300">{product.status === "upcoming" ? "Preview" : "Product"}</p>
+                  <h2 className="mt-3 text-xl font-black leading-snug text-white">{product.displayName}</h2>
+                  <p className="mt-3 line-clamp-3 text-sm leading-7 text-aura/64">{product.shortDescription}</p>
+                  <span className="mt-5 inline-flex text-sm font-black text-mint-300">查看商品</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <nav className="mt-12 grid gap-3 md:grid-cols-3" aria-label="购买前信息入口">
+          <Link href="/products" className="focus-ring rounded-full border border-white/12 px-5 py-4 text-center text-sm font-black text-white transition hover:bg-white/8">
+            产品中心
+          </Link>
+          <Link href="/guide" className="focus-ring rounded-full border border-white/12 px-5 py-4 text-center text-sm font-black text-white transition hover:bg-white/8">
+            清洁指南
+          </Link>
+          <Link href="/privacy-shipping" className="focus-ring rounded-full border border-white/12 px-5 py-4 text-center text-sm font-black text-white transition hover:bg-white/8">
+            隐私发货
+          </Link>
+        </nav>
       </article>
     </main>
   );

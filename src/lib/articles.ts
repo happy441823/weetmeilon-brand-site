@@ -1,5 +1,6 @@
 import { getPublicCmsItem, readPublicCmsRows } from "@/lib/cms/public-content";
 import { sanitizeHtml } from "@/lib/cms/content-security";
+import type { PublicCatalogProduct } from "@/types/catalog";
 
 export type ArticleStatus = "published" | "draft";
 
@@ -343,6 +344,118 @@ export function groupArticlesForGuideHub(input: Article[]) {
   }
 
   return groups;
+}
+
+function articleGuideGroupScore(currentSlug: string, relatedSlug: string) {
+  return articleGuideGroups.some((group) => group.slugs.includes(currentSlug) && group.slugs.includes(relatedSlug)) ? 3 : 0;
+}
+
+export function getRelatedArticlesForArticle(current: Article, input: Article[], limit = 3) {
+  const currentKeywords = new Set(current.keywords);
+
+  return sortArticlesForDisplay(input)
+    .filter((article) => article.slug !== current.slug)
+    .map((article) => {
+      const sharedKeywords = article.keywords.filter((keyword) => currentKeywords.has(keyword)).length;
+      const score =
+        (article.category === current.category ? 4 : 0) +
+        sharedKeywords * 2 +
+        articleGuideGroupScore(current.slug, article.slug);
+      return { article, score };
+    })
+    .sort((a, b) => {
+      if (a.score !== b.score) return b.score - a.score;
+      const priorityA = articleDisplayPriority.get(a.article.slug) ?? 1000;
+      const priorityB = articleDisplayPriority.get(b.article.slug) ?? 1000;
+      return priorityA - priorityB;
+    })
+    .slice(0, limit)
+    .map(({ article }) => article);
+}
+
+const articleRelatedProductSlugs: Record<string, string[]> = {
+  "tpe-vs-silicone-material-guide": [
+    "half-body-lower-body-leg-mold-900451599013",
+    "half-body-silicone-932717912766",
+    "hip-silicone-1008749329121"
+  ],
+  "cleaning-and-storage-guide": [
+    "half-body-storage-851429867792",
+    "half-body-lower-body-leg-mold-900451599013",
+    "hip-automatic-997868122989"
+  ],
+  "cleaning-and-storage-basics": [
+    "half-body-storage-851429867792",
+    "half-body-lower-body-leg-mold-900451599013",
+    "hip-automatic-997868122989"
+  ],
+  "privacy-shipping-guide": [
+    "half-body-storage-851429867792",
+    "half-body-silicone-932717912766",
+    "hip-silicone-1008749329121"
+  ],
+  "how-to-choose-cup-products": [
+    "half-body-lower-body-leg-mold-900451599013",
+    "hip-automatic-997868122989",
+    "half-body-storage-851429867792"
+  ],
+  "mold-products-care-guide": [
+    "half-body-lower-body-leg-mold-900451599013",
+    "hip-automatic-997868122989",
+    "hip-silicone-1008749329121"
+  ],
+  "official-site-to-tmall": [
+    "half-body-lower-body-leg-mold-900451599013",
+    "hip-automatic-997868122989",
+    "half-body-storage-851429867792"
+  ],
+  "beginner-buying-questions": [
+    "half-body-lower-body-leg-mold-900451599013",
+    "hip-automatic-997868122989",
+    "half-body-storage-851429867792"
+  ],
+  "product-info-before-buying": [
+    "half-body-lower-body-leg-mold-900451599013",
+    "hip-automatic-997868122989",
+    "half-body-storage-851429867792"
+  ],
+  "material-photo-checklist": [
+    "half-body-lower-body-leg-mold-900451599013",
+    "half-body-silicone-932717912766",
+    "hip-silicone-1008749329121"
+  ],
+  "weekly-care-routine": [
+    "half-body-storage-851429867792",
+    "half-body-lower-body-leg-mold-900451599013",
+    "hip-automatic-997868122989"
+  ]
+};
+
+function scoreArticleProduct(article: Article, product: PublicCatalogProduct) {
+  const text = `${article.slug} ${article.category} ${article.keywords.join(" ")} ${product.slug} ${product.primaryCategoryId} ${product.subcategoryId || ""} ${product.seriesId || ""}`.toLowerCase();
+  let score = product.featured ? 2 : 0;
+  if (product.status === "active") score += 2;
+  if (text.includes("storage") || text.includes("care")) score += product.slug.includes("storage") ? 6 : 1;
+  if (text.includes("privacy")) score += product.slug.includes("storage") ? 3 : 0;
+  if (text.includes("mold") || text.includes("倒模")) score += product.primaryCategoryId === "intimate-molds" ? 3 : 0;
+  if (text.includes("cup")) score += product.primaryCategoryId === "masturbator-cups" ? 4 : 0;
+  if (text.includes("material") || text.includes("材质")) score += product.subcategoryId?.includes("silicone") || product.subcategoryId?.includes("tpe") ? 3 : 0;
+  return score;
+}
+
+export function getRelatedProductsForArticle(current: Article, products: PublicCatalogProduct[], limit = 3) {
+  const bySlug = new Map(products.map((product) => [product.slug, product]));
+  const preferred = (articleRelatedProductSlugs[current.slug] || [])
+    .map((slug) => bySlug.get(slug))
+    .filter((product): product is PublicCatalogProduct => Boolean(product));
+  const used = new Set(preferred.map((product) => product.slug));
+  const scored = products
+    .filter((product) => !used.has(product.slug))
+    .map((product) => ({ product, score: scoreArticleProduct(current, product) }))
+    .sort((a, b) => b.score - a.score || a.product.sortOrder - b.product.sortOrder)
+    .map(({ product }) => product);
+
+  return [...preferred, ...scored].slice(0, limit);
 }
 
 function escapeHtml(input: unknown) {
