@@ -83,10 +83,26 @@ export function resourceItemKey(row: Record<string, unknown>, config?: Pick<Reso
 }
 
 export function buildAdminSavePayload(resource: string, form: Record<string, unknown>) {
-  if (!workflowClientResources.has(resource)) {
-    return { ...form };
+  const payload = { ...form };
+  if (resource === "products") {
+    for (const name of Object.keys(productStructuredJsonFieldLabels)) {
+      if (!Object.hasOwn(payload, name)) continue;
+      if (name === "gallery_json") {
+        const items = normalizeGalleryJson(payload[name]);
+        if (items != null) payload[name] = stringifyAdminJson(items);
+      } else if (name === "specifications_json") {
+        const rows = normalizeSpecRowsJson(payload[name]);
+        if (rows != null) payload[name] = stringifyAdminJson(rows);
+      } else {
+        const items = normalizeStringArrayJson(payload[name]);
+        if (items != null) payload[name] = stringifyAdminJson(items);
+      }
+    }
   }
-  return Object.fromEntries(Object.entries(form).filter(([key]) => !workflowManagedClientFields.has(key)));
+  if (!workflowClientResources.has(resource)) {
+    return payload;
+  }
+  return Object.fromEntries(Object.entries(payload).filter(([key]) => !workflowManagedClientFields.has(key)));
 }
 
 export function pickDirtyAdminFields(form: Record<string, unknown>, dirtyFields: Iterable<string>) {
@@ -99,6 +115,48 @@ function parseJsonValue(value: unknown) {
   return JSON.parse(value);
 }
 
+function parseAdminPlainLines(raw: string) {
+  return raw
+    .split(/\r?\n|[;；]/)
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^[-*•\s]+/, "")
+        .replace(/^\d+\s*[.|、:：-]\s*/, "")
+        .trim()
+    )
+    .filter(Boolean);
+}
+
+function looksLikeJson(raw: string) {
+  return /^[\s]*[\[{]/.test(raw);
+}
+
+function normalizeGalleryUrl(value: string) {
+  return value.trim().replace(/[，,。.;；、)）\]]+$/g, "");
+}
+
+export function normalizeGalleryJson(value: unknown) {
+  try {
+    const parsed = parseJsonValue(value);
+    if (parsed == null) return [];
+    if (!Array.isArray(parsed)) return null;
+    return Array.from(
+      new Set(
+        parsed
+          .map((item) => normalizeGalleryUrl(String(item ?? "")))
+          .filter((url) => /^https?:\/\//i.test(url) || url.startsWith("/"))
+      )
+    );
+  } catch {
+    if (typeof value !== "string" || looksLikeJson(value)) return null;
+    const urls = Array.from(value.matchAll(/https?:\/\/[^\s"',\]\)）]+|\/[^\s"',\]\)）]+/gi))
+      .map((match) => normalizeGalleryUrl(match[0]))
+      .filter((url) => /^https?:\/\//i.test(url) || url.startsWith("/"));
+    return urls.length ? Array.from(new Set(urls)) : null;
+  }
+}
+
 export function normalizeStringArrayJson(value: unknown) {
   try {
     const parsed = parseJsonValue(value);
@@ -106,7 +164,9 @@ export function normalizeStringArrayJson(value: unknown) {
     if (!Array.isArray(parsed)) return null;
     return parsed.map((item) => String(item ?? ""));
   } catch {
-    return null;
+    if (typeof value !== "string" || looksLikeJson(value)) return null;
+    const lines = parseAdminPlainLines(value);
+    return lines.length ? lines : null;
   }
 }
 
@@ -126,7 +186,15 @@ export function normalizeSpecRowsJson(value: unknown) {
       return { label: "", value: String(item ?? "") };
     });
   } catch {
-    return null;
+    if (typeof value !== "string" || looksLikeJson(value)) return null;
+    const rows = parseAdminPlainLines(value).map((line) => {
+      const separator = line.match(/\s*[:：|]\s*/);
+      if (!separator || separator.index == null) return { label: "说明", value: line };
+      const label = line.slice(0, separator.index).trim();
+      const valueText = line.slice(separator.index + separator[0].length).trim();
+      return { label: label || "说明", value: valueText || line };
+    });
+    return rows.length ? rows : null;
   }
 }
 
@@ -144,6 +212,9 @@ export const productStructuredJsonFieldLabels: Record<string, string> = {
 export function getAdminJsonFieldError(resource: string, name: string, value: unknown) {
   if (resource !== "products" || !(name in productStructuredJsonFieldLabels)) return "";
   const label = productStructuredJsonFieldLabels[name];
+  if (name === "gallery_json") {
+    return normalizeGalleryJson(value) == null ? `${label} format is invalid. Use a JSON array, or paste one http/https image URL per line.` : "";
+  }
   if (name === "specifications_json") {
     return normalizeSpecRowsJson(value) == null ? `${label}格式不正确：请使用规格名和规格值，或检查 JSON 数组。` : "";
   }

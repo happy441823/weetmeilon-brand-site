@@ -7,6 +7,7 @@ import {
   getAdminJsonFormError,
   getAdminSlugFieldError,
   getAdminPagination,
+  normalizeGalleryJson,
   normalizeSpecRowsJson,
   normalizeStringArrayJson,
   pickDirtyAdminFields,
@@ -17,7 +18,7 @@ import {
 } from "../../src/app/admin/AdminCmsClient.tsx";
 
 test("admin UI reports product JSON field errors before saving", () => {
-  assert.match(getAdminJsonFieldError("products", "gallery_json", "{ bad json"), /商品图集格式不正确/);
+  assert.match(getAdminJsonFieldError("products", "gallery_json", "{ bad json"), /format is invalid/);
   assert.match(getAdminJsonFieldError("products", "specifications_json", '{"label":"not an array"}'), /规格说明格式不正确/);
   assert.equal(getAdminJsonFieldError("products", "gallery_json", '["https://example.com/a.jpg"]'), "");
   assert.equal(getAdminJsonFieldError("articles", "gallery_json", "{ bad json"), "");
@@ -165,4 +166,33 @@ test("admin UI normalizes product specification JSON rows", () => {
 
 test("admin UI writes structured JSON with stable formatting", () => {
   assert.equal(stringifyAdminJson(["清洁收纳", "官方渠道"]), '[\n  "清洁收纳",\n  "官方渠道"\n]');
+});
+test("admin UI accepts pasted product gallery image URLs", () => {
+  assert.equal(getAdminJsonFieldError("products", "gallery_json", "https://img.alicdn.com/a.jpg\nhttps://img.alicdn.com/b.jpg"), "");
+  assert.deepEqual(normalizeGalleryJson("https://img.alicdn.com/a.jpg\nhttps://img.alicdn.com/a.jpg\nhttps://img.alicdn.com/b.jpg"), [
+    "https://img.alicdn.com/a.jpg",
+    "https://img.alicdn.com/b.jpg"
+  ]);
+  assert.deepEqual(normalizeGalleryJson('["/images/products/a.jpg","https://img.alicdn.com/b.jpg"]'), [
+    "/images/products/a.jpg",
+    "https://img.alicdn.com/b.jpg"
+  ]);
+  assert.equal(normalizeGalleryJson("{ bad json"), null);
+  assert.equal(normalizeGalleryJson("javascript:alert(1)"), null);
+});
+
+test("admin save payload formats product structured JSON before sending", () => {
+  const payload = buildAdminSavePayload("products", {
+    name: "Gallery test",
+    gallery_json: "https://img.alicdn.com/a.jpg\nhttps://img.alicdn.com/b.jpg",
+    highlights_json: "soft\nclean",
+    specifications_json: "material: official page"
+  });
+
+  assert.deepEqual(JSON.parse(String(payload.gallery_json)), [
+    "https://img.alicdn.com/a.jpg",
+    "https://img.alicdn.com/b.jpg"
+  ]);
+  assert.deepEqual(JSON.parse(String(payload.highlights_json)), ["soft", "clean"]);
+  assert.deepEqual(JSON.parse(String(payload.specifications_json)), [{ label: "material", value: "official page" }]);
 });
