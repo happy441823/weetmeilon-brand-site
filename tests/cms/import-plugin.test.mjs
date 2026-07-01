@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { detectImportPlatform, parseUrlLines } from "../../src/lib/cms/importers/platform-detect.ts";
 import { extractPublicMetadata } from "../../src/lib/cms/importers/metadata-fetcher.ts";
-import { previewImportInput } from "../../src/lib/cms/importers/import-job.ts";
+import { buildImportDraftSuggestion, previewImportInput } from "../../src/lib/cms/importers/import-job.ts";
 import { assertImportImageAllowed, safeImportedFileName } from "../../src/lib/cms/importers/image-normalizer.ts";
 import { sanitizeCreatePayload, sanitizeUpdatePayload } from "../../src/lib/cms/workflow.ts";
 
@@ -22,6 +22,10 @@ test("detectImportPlatform allows only supported Tmall and JD hosts", () => {
 
 test("parseUrlLines deduplicates and enforces a maximum", () => {
   assert.deepEqual(parseUrlLines("https://item.jd.com/1.html\nhttps://item.jd.com/1.html"), ["https://item.jd.com/1.html"]);
+  assert.deepEqual(parseUrlLines("请看 https://detail.tmall.com/item.htm?id=123，备用 https://item.jd.com/456.html。"), [
+    "https://detail.tmall.com/item.htm?id=123",
+    "https://item.jd.com/456.html"
+  ]);
   assert.throws(() => parseUrlLines("a\nb\nc", 2));
 });
 
@@ -33,14 +37,56 @@ test("extractPublicMetadata reads only public meta and JSON-LD", () => {
       <meta property="og:title" content="OG Demo" />
       <meta property="og:description" content="Public description" />
       <meta property="og:image" content="https://img.example/demo.jpg" />
+      <script>window.__pic='//img.alicdn.com/imgextra/i1/demo/O1CN01demo.jpg';</script>
       <script type="application/ld+json">{"@type":"Product","name":"Demo"}</script>
     </head></html>`
   );
   assert.equal(metadata.platform, "tmall");
   assert.equal(metadata.titleDetected, "OG Demo");
   assert.equal(metadata.description, "Public description");
-  assert.deepEqual(metadata.imageUrls, ["https://img.example/demo.jpg"]);
+  assert.deepEqual(metadata.imageUrls, [
+    "https://img.example/demo.jpg",
+    "https://img.alicdn.com/imgextra/i1/demo/O1CN01demo.jpg",
+  ]);
   assert.equal(Array.isArray(metadata.metadata.jsonLd), true);
+});
+
+test("extractPublicMetadata detects JD public main images", () => {
+  const metadata = extractPublicMetadata(
+    "https://item.jd.com/100012345678.html",
+    `<html><head><title>JD Demo</title></head><body>
+      <img src="//img14.360buyimg.com/n0/jfs/demo-product.webp" />
+    </body></html>`
+  );
+  assert.equal(metadata.platform, "jd");
+  assert.deepEqual(metadata.imageUrls, ["https://img14.360buyimg.com/n0/jfs/demo-product.webp"]);
+});
+
+test("buildImportDraftSuggestion creates a safe non-public draft", () => {
+  const draft = buildImportDraftSuggestion({
+    sourceUrl: "https://detail.tmall.com/item.htm?id=123456",
+    platform: "tmall",
+    sourceProductId: "123456",
+    titleDetected: "柔感半身款 - 天猫旗舰店",
+    metadata: {
+      platform: "tmall",
+      sourceUrl: "https://detail.tmall.com/item.htm?id=123456",
+      sourceProductId: "123456",
+      titleDetected: "柔感半身款",
+      sourceShopName: "蜜女郎旗舰店",
+      imageUrls: ["https://img.alicdn.com/imgextra/i1/demo.jpg"],
+      description: "",
+      metadata: {}
+    }
+  });
+  assert.equal(draft.productId, "tmall-123456");
+  assert.equal(draft.name, "柔感半身款");
+  assert.equal(draft.status, "draft");
+  assert.equal(draft.indexable, false);
+  assert.equal(draft.visibleCatalog, false);
+  assert.equal(draft.buyButtonEnabled, false);
+  assert.equal(draft.tmallEnabled, false);
+  assert.deepEqual(draft.galleryJson, ["https://img.alicdn.com/imgextra/i1/demo.jpg"]);
 });
 
 test("previewImportInput keeps invalid links as errors and requires authorization", () => {
