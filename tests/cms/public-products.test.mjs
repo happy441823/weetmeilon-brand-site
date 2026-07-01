@@ -93,6 +93,56 @@ test("public products map per-product media public urls instead of one placehold
   process.env.CMS_PUBLIC_D1_READS = previous;
 });
 
+test("public product detail reads only the requested product slug from D1", async () => {
+  const previous = process.env.CMS_PUBLIC_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "true";
+  const queries = [];
+  const productRows = [
+    { id: "p1", slug: "one", name: "One", status: "published", sort_order: 1 },
+    { id: "p2", slug: "two", name: "Two", status: "published", sort_order: 2 }
+  ];
+  const mediaRows = [
+    { product_id: "p1", image_type: "cover", sort_order: 1, alt_text: "One cover", public_url: "https://media.example.com/p1.webp" },
+    { product_id: "p2", image_type: "cover", sort_order: 1, alt_text: "Two cover", public_url: "https://media.example.com/p2.webp" }
+  ];
+
+  setCmsBindingsForTest({
+    CMS_DB: {
+      prepare(sql) {
+        return {
+          values: [],
+          bind(...values) {
+            this.values = values;
+            return this;
+          },
+          async all() {
+            queries.push({ sql, values: this.values });
+            if (/FROM "products"/.test(sql)) {
+              const requestedSlug = this.values.at(-1);
+              return { results: productRows.filter((row) => row.slug === requestedSlug) };
+            }
+            if (/FROM product_images/.test(sql)) {
+              return { results: mediaRows.filter((row) => this.values.includes(row.product_id)) };
+            }
+            return { results: [] };
+          }
+        };
+      }
+    }
+  });
+
+  const product = await getPublicProductBySlugWithCmsFallback("two");
+  assert.equal(product?.id, "p2");
+  assert.equal(product?.coverImage, "https://media.example.com/p2.webp");
+  assert.equal(queries[0].values.at(-1), "two");
+  assert.match(queries[0].sql, /slug = \?/);
+  assert.match(queries[0].sql, /LIMIT 1/);
+  assert.deepEqual(queries[1].values, ["p2"]);
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = previous;
+});
+
 test("public products prefer Tmall main cover media over approved composite covers", async () => {
   const previous = process.env.CMS_PUBLIC_D1_READS;
   process.env.CMS_PUBLIC_D1_READS = "true";

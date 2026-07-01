@@ -9,7 +9,7 @@ import {
   safePublicSpecifications
 } from "@/lib/public-seo-copy";
 import { getCmsDb } from "./env";
-import { readPublicCmsRows } from "./public-content";
+import { publicD1Enabled, publicVisibilityWhere, readPublicCmsRows } from "./public-content";
 
 type ProductRow = Record<string, unknown> & {
   id: string;
@@ -286,6 +286,34 @@ async function loadProductMedia(rows: ProductRow[]) {
   return map;
 }
 
+async function loadProductBySlug(slug: string) {
+  if (!publicD1Enabled("products")) {
+    return { row: getPublicCatalogProductBySlug(slug), media: new Map<string, ProductMediaRow[]>(), source: "fallback" as const };
+  }
+
+  const db = getCmsDb();
+  if (!db) {
+    return { row: getPublicCatalogProductBySlug(slug), media: new Map<string, ProductMediaRow[]>(), source: "fallback" as const };
+  }
+
+  const now = new Date().toISOString();
+  const where = publicVisibilityWhere("products");
+  const needsTime = where.includes("published_at") || where.includes("scheduled_at");
+
+  try {
+    const statement = db.prepare(`SELECT * FROM "products" WHERE ${where} AND slug = ? ORDER BY sort_order ASC, updated_at DESC LIMIT 1`);
+    const result = needsTime ? await statement.bind(now, now, slug).all<ProductRow>() : await statement.bind(slug).all<ProductRow>();
+    const row = (result.results || [])[0];
+    if (!row) {
+      return { row: null, media: new Map<string, ProductMediaRow[]>(), source: "d1" as const };
+    }
+    const media = await loadProductMedia([row]);
+    return { row, media, source: "d1" as const };
+  } catch {
+    return { row: getPublicCatalogProductBySlug(slug), media: new Map<string, ProductMediaRow[]>(), source: "fallback" as const };
+  }
+}
+
 function toCategory(row: CategoryRow): CatalogCategory {
   return {
     id: row.id,
@@ -325,12 +353,11 @@ export async function getPublicProductsWithCmsFallback() {
 }
 
 export async function getPublicProductBySlugWithCmsFallback(slug: string) {
-  const result = await readPublicCmsRows<ProductRow>("products");
+  const result = await loadProductBySlug(slug);
   if (result.source !== "d1") {
-    return getPublicCatalogProductBySlug(slug);
+    return result.row;
   }
-  const media = await loadProductMedia(result.rows);
-  return result.rows.map((row) => toPublicProduct(row, media.get(row.id))).find((product) => product.slug === slug) || null;
+  return result.row ? toPublicProduct(result.row, result.media.get(result.row.id)) : null;
 }
 
 export async function getPublicCategoriesWithCmsFallback() {
