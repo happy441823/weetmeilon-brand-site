@@ -71,6 +71,21 @@ type SeriesRow = {
   is_active?: number | null;
 };
 
+const safePublicSlugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function safePublicProductSlug(row: ProductRow) {
+  const slug = String(row.slug || "").trim();
+  if (safePublicSlugPattern.test(slug)) return slug;
+
+  const id = String(row.id || "").trim();
+  if (safePublicSlugPattern.test(id)) return id;
+
+  return slug
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "product";
+}
+
 function parseJsonArray<T>(value: unknown, fallback: T[] = []) {
   if (Array.isArray(value)) return value as T[];
   if (typeof value !== "string" || !value.trim()) return fallback;
@@ -215,7 +230,7 @@ function toPublicProduct(row: ProductRow, media: ProductMediaRow[] = []): Public
   const gallery = sortedMedia.map((item) => item.public_url).filter((url): url is string => Boolean(url));
   return {
     id: row.id,
-    slug: row.slug,
+    slug: safePublicProductSlug(row),
     displayName,
     shortName: row.short_name || displayName,
     categoryId: categories.primaryCategoryId,
@@ -301,8 +316,8 @@ async function loadProductBySlug(slug: string) {
   const needsTime = where.includes("published_at") || where.includes("scheduled_at");
 
   try {
-    const statement = db.prepare(`SELECT * FROM "products" WHERE ${where} AND slug = ? ORDER BY sort_order ASC, updated_at DESC LIMIT 1`);
-    const result = needsTime ? await statement.bind(now, now, slug).all<ProductRow>() : await statement.bind(slug).all<ProductRow>();
+    const statement = db.prepare(`SELECT * FROM "products" WHERE ${where} AND (slug = ? OR id = ?) ORDER BY sort_order ASC, updated_at DESC LIMIT 1`);
+    const result = needsTime ? await statement.bind(now, now, slug, slug).all<ProductRow>() : await statement.bind(slug, slug).all<ProductRow>();
     const row = (result.results || [])[0];
     if (!row) {
       return { row: null, media: new Map<string, ProductMediaRow[]>(), source: "d1" as const };

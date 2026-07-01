@@ -108,8 +108,8 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
             alt={`${productName}产品主视觉`}
             sizes="(min-width: 1024px) 31vw, (min-width: 768px) 45vw, 92vw"
             className="aspect-square rounded-[22px] border border-white/10"
-            imageClassName="p-0 group-hover:scale-[1.03]"
-            fit="cover"
+            imageClassName="p-0 group-hover:scale-[1.015]"
+            fit="contain"
           />
         </Link>
       </div>

@@ -118,8 +118,9 @@ test("public product detail reads only the requested product slug from D1", asyn
           async all() {
             queries.push({ sql, values: this.values });
             if (/FROM "products"/.test(sql)) {
-              const requestedSlug = this.values.at(-1);
-              return { results: productRows.filter((row) => row.slug === requestedSlug) };
+              const requestedSlug = this.values.at(-2);
+              const requestedId = this.values.at(-1);
+              return { results: productRows.filter((row) => row.slug === requestedSlug || row.id === requestedId) };
             }
             if (/FROM product_images/.test(sql)) {
               return { results: mediaRows.filter((row) => this.values.includes(row.product_id)) };
@@ -134,8 +135,8 @@ test("public product detail reads only the requested product slug from D1", asyn
   const product = await getPublicProductBySlugWithCmsFallback("two");
   assert.equal(product?.id, "p2");
   assert.equal(product?.coverImage, "https://media.example.com/p2.webp");
-  assert.equal(queries[0].values.at(-1), "two");
-  assert.match(queries[0].sql, /slug = \?/);
+  assert.deepEqual(queries[0].values.slice(-2), ["two", "two"]);
+  assert.match(queries[0].sql, /\(slug = \? OR id = \?\)/);
   assert.match(queries[0].sql, /LIMIT 1/);
   assert.deepEqual(queries[1].values, ["p2"]);
 
@@ -171,6 +172,62 @@ test("public products prefer Tmall main cover media over approved composite cove
   const [product] = await getPublicProductsWithCmsFallback();
   assert.equal(product.coverImage, "https://media.example.com/images/products/tmall/900451599013.jpg");
   assert.equal(product.imageAlt, "Legacy cover");
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = previous;
+});
+
+test("public product cards expose safe detail slugs even when D1 contains legacy Chinese slugs", async () => {
+  const previous = process.env.CMS_PUBLIC_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "true";
+  const rows = [
+    { id: "tmall-915657112223", slug: "半身娃娃1比1", name: "One", status: "published", sort_order: 1 },
+    { id: "tmall-932717912766", slug: "half-body-silicone-932717912766", name: "Two", status: "published", sort_order: 2 }
+  ];
+  setCmsBindingsForTest({ CMS_DB: createPublicDb(rows) });
+
+  const products = await getPublicProductsWithCmsFallback();
+  assert.equal(products[0].slug, "tmall-915657112223");
+  assert.doesNotMatch(products[0].slug, /[^\x00-\x7F]/);
+  assert.equal(products[1].slug, "half-body-silicone-932717912766");
+
+  setCmsBindingsForTest(null);
+  process.env.CMS_PUBLIC_D1_READS = previous;
+});
+
+test("public product detail can resolve an invalid legacy D1 slug through the safe product id", async () => {
+  const previous = process.env.CMS_PUBLIC_D1_READS;
+  process.env.CMS_PUBLIC_D1_READS = "true";
+  const queries = [];
+  setCmsBindingsForTest({
+    CMS_DB: {
+      prepare(sql) {
+        return {
+          values: [],
+          bind(...values) {
+            this.values = values;
+            return this;
+          },
+          async all() {
+            queries.push({ sql, values: this.values });
+            if (/FROM "products"/.test(sql)) {
+              const requestedSlug = this.values.at(-2);
+              const requestedId = this.values.at(-1);
+              const rows = [{ id: "tmall-915657112223", slug: "半身娃娃1比1", name: "One", status: "published", sort_order: 1 }];
+              return { results: rows.filter((row) => row.slug === requestedSlug || row.id === requestedId) };
+            }
+            if (/FROM product_images/.test(sql)) return { results: [] };
+            return { results: [] };
+          }
+        };
+      }
+    }
+  });
+
+  const product = await getPublicProductBySlugWithCmsFallback("tmall-915657112223");
+  assert.equal(product?.id, "tmall-915657112223");
+  assert.equal(product?.slug, "tmall-915657112223");
+  assert.deepEqual(queries[0].values.slice(-2), ["tmall-915657112223", "tmall-915657112223"]);
 
   setCmsBindingsForTest(null);
   process.env.CMS_PUBLIC_D1_READS = previous;
