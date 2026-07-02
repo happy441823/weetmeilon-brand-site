@@ -1,6 +1,7 @@
 import { getCmsDb } from "../env";
+import { slugify } from "../validation";
 import { detectImportPlatform, parseUrlLines } from "./platform-detect";
-import { extractPublicMetadata, type ProductMetadata } from "./metadata-fetcher";
+import { extractPublicMetadata, fetchPublicMetadata, type ProductMetadata } from "./metadata-fetcher";
 
 export type ImportPreviewInput = {
   urls?: string;
@@ -11,6 +12,26 @@ export type ImportPreviewInput = {
   series?: string;
   notes?: string;
   html?: string;
+  fetchPublicMetadata?: boolean;
+};
+
+export type ImportDraftSuggestion = {
+  productId: string | null;
+  slug: string;
+  name: string;
+  shortName: string;
+  summary: string;
+  seoTitle: string;
+  seoDescription: string;
+  imageAlt: string;
+  galleryJson: string[];
+  status: "draft";
+  indexable: false;
+  visibleCatalog: false;
+  buyButtonEnabled: false;
+  tmallEnabled: false;
+  jdEnabled: false;
+  linksVerified: false;
 };
 
 export type ImportPreviewItem = {
@@ -21,6 +42,7 @@ export type ImportPreviewItem = {
   authorized: boolean;
   errors: string[];
   metadata: ProductMetadata | null;
+  draft: ImportDraftSuggestion | null;
 };
 
 function parseCsvRows(csv: string) {
@@ -64,6 +86,58 @@ function sourceUrlsFromInput(input: ImportPreviewInput) {
   return Array.from(new Set(urls));
 }
 
+function cleanTitle(value: string) {
+  return value
+    .replace(/\s*[-_|｜–—]\s*(天猫|淘宝|京东|Tmall|Taobao|JD).*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 48);
+}
+
+function draftId(platform: "tmall" | "jd" | "unknown", productId: string | null) {
+  if (!productId || platform === "unknown") return null;
+  return `${platform}-${productId}`;
+}
+
+export function buildImportDraftSuggestion(input: {
+  sourceUrl: string;
+  platform: "tmall" | "jd" | "unknown";
+  sourceProductId: string | null;
+  titleDetected?: string | null;
+  metadata?: ProductMetadata | null;
+}): ImportDraftSuggestion | null {
+  if (!["tmall", "jd"].includes(input.platform)) return null;
+  const productId = draftId(input.platform, input.sourceProductId);
+  const fallbackName = input.platform === "tmall" ? "天猫待审核商品" : "京东待审核商品";
+  const name = cleanTitle(input.titleDetected || "") || fallbackName;
+  const slug =
+    (input.sourceProductId ? slugify(`${name}-${input.sourceProductId}`) : "") ||
+    productId ||
+    slugify(name) ||
+    crypto.randomUUID();
+  const channelName = input.platform === "tmall" ? "天猫官方旗舰店" : "京东官方旗舰店";
+  const summary = "由商品链接导入助手创建的待审核草稿。请人工确认分类、材质、图片授权、正文文案和 SEO 后，再提交审核或发布。";
+
+  return {
+    productId,
+    slug,
+    name,
+    shortName: name.slice(0, 24),
+    summary,
+    seoTitle: `${name}｜蜜女郎官方渠道待审核`,
+    seoDescription: `了解${name}的产品类型、材质方向、清洁收纳与隐私购买说明。正式展示前请人工复核具体规格、发货和售后信息。`,
+    imageAlt: `蜜女郎${name}待审核商品图`,
+    galleryJson: input.metadata?.imageUrls || [],
+    status: "draft",
+    indexable: false,
+    visibleCatalog: false,
+    buyButtonEnabled: false,
+    tmallEnabled: false,
+    jdEnabled: false,
+    linksVerified: false
+  };
+}
+
 export function previewImportInput(input: ImportPreviewInput, maxUrls = 50): ImportPreviewItem[] {
   const urls = sourceUrlsFromInput(input);
   if (urls.length === 0) {
@@ -81,14 +155,22 @@ export function previewImportInput(input: ImportPreviewInput, maxUrls = 50): Imp
       if (input.html && urls.length === 1) {
         metadata = extractPublicMetadata(detected.normalizedUrl, input.html);
       }
+      const titleDetected = metadata?.titleDetected || input.productName || "";
       return {
         sourceUrl: detected.normalizedUrl,
         platform: detected.platform,
         sourceProductId: detected.productId,
-        titleDetected: metadata?.titleDetected || input.productName || "",
+        titleDetected,
         authorized: input.authorized === true,
         errors,
-        metadata
+        metadata,
+        draft: buildImportDraftSuggestion({
+          sourceUrl: detected.normalizedUrl,
+          platform: detected.platform,
+          sourceProductId: detected.productId,
+          titleDetected,
+          metadata
+        })
       };
     } catch (error) {
       errors.push(error instanceof Error ? error.message : "链接解析失败。");
@@ -99,28 +181,64 @@ export function previewImportInput(input: ImportPreviewInput, maxUrls = 50): Imp
         titleDetected: input.productName || "",
         authorized: input.authorized === true,
         errors,
-        metadata
+        metadata,
+        draft: null
       };
     }
   });
 }
 
+export async function previewImportInputWithPublicMetadata(input: ImportPreviewInput, maxUrls = 50) {
+  const items = previewImportInput(input, maxUrls);
+  if (!input.fetchPublicMetadata) return items;
+
+  for (const item of items) {
+    if (item.errors.length > 0) continue;
+    try {
+      const metadata = await fetchPublicMetadata(item.sourceUrl);
+      item.metadata = metadata;
+      item.titleDetected = metadata.titleDetected || item.titleDetected;
+      item.draft = buildImportDraftSuggestion({
+        sourceUrl: item.sourceUrl,
+        platform: item.platform,
+        sourceProductId: item.sourceProductId,
+        titleDetected: item.titleDetected,
+        metadata
+      });
+    } catch (error) {
+      item.errors.push(error instanceof Error ? error.message : "公开 metadata 读取失败。");
+    }
+  }
+  return items;
+}
+
 export async function createImportJobs(input: ImportPreviewInput, actorId: string) {
   const db = getCmsDb();
   if (!db) throw new Error("CMS_DB 未绑定。");
-  const items = previewImportInput(input, Number(process.env.CMS_IMPORT_MAX_URLS_PER_BATCH || 50));
+  const items = await previewImportInputWithPublicMetadata(input, Number(process.env.CMS_IMPORT_MAX_URLS_PER_BATCH || 50));
   const now = new Date().toISOString();
   const created: string[] = [];
   for (const item of items) {
     if (item.errors.length > 0) continue;
     const status = item.authorized ? "needs_review" : "draft";
+    const rawMetadata = {
+      metadata: item.metadata,
+      draft: item.draft,
+      compliance: {
+        source: "public-meta-only",
+        noCookies: true,
+        noPrivateApis: true,
+        noAutoPublish: true
+      }
+    };
     await db
       .prepare(
         `INSERT INTO import_jobs
-          (id, source_platform, source_url, source_product_id, title_detected, status, requested_by, authorized, raw_metadata_json, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (id, source_platform, source_url, source_product_id, source_shop_name, title_detected, status, requested_by, authorized, raw_metadata_json, notes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(source_url) DO UPDATE SET
           source_product_id = excluded.source_product_id,
+          source_shop_name = excluded.source_shop_name,
           title_detected = excluded.title_detected,
           requested_by = excluded.requested_by,
           authorized = excluded.authorized,
@@ -133,11 +251,12 @@ export async function createImportJobs(input: ImportPreviewInput, actorId: strin
         item.platform,
         item.sourceUrl,
         item.sourceProductId,
+        item.metadata?.sourceShopName || null,
         item.titleDetected || null,
         status,
         actorId,
         item.authorized ? 1 : 0,
-        JSON.stringify(item.metadata?.metadata || {}),
+        JSON.stringify(rawMetadata),
         input.notes || null,
         now,
         now

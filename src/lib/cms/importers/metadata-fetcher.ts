@@ -27,20 +27,39 @@ function decodeHtml(value: string) {
     .replace(/&quot;/g, "\"")
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replace(/&gt;/g, ">")
+    .replace(/\\u002F/g, "/")
+    .replace(/\\\//g, "/");
 }
 
-function collectOgImages(html: string) {
+function normalizeImageUrl(value: string) {
+  const decoded = decodeHtml(value).trim();
+  if (decoded.startsWith("//")) return `https:${decoded}`;
+  if (decoded.startsWith("http://")) return decoded.replace(/^http:\/\//i, "https://");
+  if (decoded.startsWith("https://")) return decoded;
+  return "";
+}
+
+function collectPublicImages(html: string) {
   const images = new Set<string>();
-  const pattern = /<meta\s+[^>]*(?:property|name)=["']og:image(?::url)?["'][^>]*content=["']([^"']+)["'][^>]*>/gi;
-  let match = pattern.exec(html);
-  while (match) {
-    const value = decodeHtml(match[1] || "").trim();
-    if (value.startsWith("http://") || value.startsWith("https://")) {
-      images.add(value);
-    }
-    match = pattern.exec(html);
+  const metaPattern = /<meta\s+[^>]*(?:property|name)=["'](?:og:image(?::url)?|twitter:image)["'][^>]*content=["']([^"']+)["'][^>]*>/gi;
+  let metaMatch = metaPattern.exec(html);
+  while (metaMatch) {
+    const normalized = normalizeImageUrl(metaMatch[1] || "");
+    if (normalized) images.add(normalized);
+    metaMatch = metaPattern.exec(html);
   }
+
+  const imagePattern = /(?:https?:)?\/\/(?:img\.alicdn\.com|gd\d+\.alicdn\.com|img\d+\.360buyimg\.com)\/[^"'\s\\<>]+/gi;
+  let imageMatch = imagePattern.exec(html);
+  while (imageMatch) {
+    const normalized = normalizeImageUrl(imageMatch[0]);
+    if (normalized && /\.(?:jpe?g|png|webp)(?:[?!._-]|$)/i.test(normalized)) {
+      images.add(normalized);
+    }
+    imageMatch = imagePattern.exec(html);
+  }
+
   return Array.from(images).slice(0, 12);
 }
 
@@ -78,7 +97,7 @@ export function extractPublicMetadata(sourceUrl: string, html: string): ProductM
     sourceProductId: detected.productId,
     titleDetected,
     sourceShopName: firstMatch(html, [/shopName["']?\s*:\s*["']([^"']+)["']/i]),
-    imageUrls: collectOgImages(html),
+    imageUrls: collectPublicImages(html),
     description,
     metadata: {
       host: detected.host,
