@@ -125,6 +125,10 @@ export function normalizeAdminProductSlug(value: unknown) {
     .replace(/^-|-$/g, "");
 }
 
+export function adminWorkflowActionsForPublish(currentStatus: unknown) {
+  return String(currentStatus || "") === "draft" ? ["submit_review", "publish"] : ["publish"];
+}
+
 function parseJsonValue(value: unknown) {
   if (value == null || value === "") return null;
   if (typeof value !== "string") return value;
@@ -545,22 +549,36 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
     startTransition(async () => {
       try {
         const id = resourceItemKey(selected, config);
-        const body: Record<string, unknown> = { _action: action };
+        const body: Record<string, unknown> = {};
         if (action === "schedule") {
           const scheduledAt = window.prompt("请输入定时发布时间 ISO，例如 2026-06-18T10:00:00.000Z");
           if (!scheduledAt) return;
           body.scheduled_at = scheduledAt;
         }
-        const response = await fetch(`/api/admin/resource/${resource}/${encodeURIComponent(id)}`, {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body)
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "状态操作失败。");
-        setMessage(action === "publish" ? "已发布。" : action === "offline" ? "已下线。" : "已提交审核。");
+
+        async function sendWorkflowAction(nextAction: string, extraBody: Record<string, unknown> = {}) {
+          const response = await fetch(`/api/admin/resource/${resource}/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ _action: nextAction, ...extraBody })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "状态操作失败。");
+          return data as { item: Record<string, unknown> };
+        }
+
+        let data: { item: Record<string, unknown> } | null = null;
+        if (action === "publish") {
+          for (const nextAction of adminWorkflowActionsForPublish(selected.status)) {
+            data = await sendWorkflowAction(nextAction);
+          }
+        } else {
+          data = await sendWorkflowAction(action, body);
+        }
+
+        setMessage(action === "publish" ? "已发布并上线产品中心。" : action === "offline" ? "已下线。" : "已提交审核。");
         await loadRows();
-        editRow(data.item);
+        if (data?.item) editRow(data.item);
       } catch (error) {
         setMessage(readError(error));
       }

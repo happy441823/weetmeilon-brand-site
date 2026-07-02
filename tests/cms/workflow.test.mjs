@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   assertWorkflowAction,
+  buildProductPublishVisibilityPatch,
   sanitizeCreatePayload,
   sanitizeUpdatePayload,
   validateArticlePublish,
@@ -38,6 +39,39 @@ test("reviewer and super_admin can publish and offline workflow content", () => 
 test("workflow transition table is explicit", () => {
   assert.deepEqual(Object.keys(workflowTransitions).sort(), ["archive", "cancel_schedule", "offline", "publish", "return_to_draft", "schedule", "set_coming_soon", "submit_review"]);
   assert.deepEqual(workflowTransitions.publish.roles, ["reviewer", "super_admin"]);
+});
+
+test("published products become visible and enable linked purchase channels", () => {
+  assert.deepEqual(
+    buildProductPublishVisibilityPatch({
+      tmall_url: "https://detail.tmall.com/item.htm?id=1055096918525",
+      jd_url: ""
+    }),
+    {
+      visible_catalog: 1,
+      indexable: 1,
+      tmall_enabled: 1,
+      buy_button_enabled: 1
+    }
+  );
+
+  assert.deepEqual(
+    buildProductPublishVisibilityPatch({
+      tmall_url: "",
+      jd_url: "https://item.jd.com/123.html"
+    }),
+    {
+      visible_catalog: 1,
+      indexable: 1,
+      jd_enabled: 1,
+      buy_button_enabled: 1
+    }
+  );
+
+  assert.deepEqual(buildProductPublishVisibilityPatch({ tmall_url: "", jd_url: "" }), {
+    visible_catalog: 1,
+    indexable: 1
+  });
 });
 
 test("workflow validates from-to status, schedule time and product-only coming soon", () => {

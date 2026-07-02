@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  adminWorkflowActionsForPublish,
   buildAdminSavePayload,
   getAdminJsonFieldError,
   getAdminJsonFormError,
@@ -58,6 +59,12 @@ test("admin UI normalizes product slugs before saving", () => {
   );
   assert.equal(normalizeAdminProductSlug("Half Body 1055096918525"), "half-body-1055096918525");
   assert.equal(buildAdminSavePayload("products", { slug: " Tmall_1055096918525 " }).slug, "tmall-1055096918525");
+});
+
+test("admin publish action submits draft products for review before publishing", () => {
+  assert.deepEqual(adminWorkflowActionsForPublish("draft"), ["submit_review", "publish"]);
+  assert.deepEqual(adminWorkflowActionsForPublish("pending_review"), ["publish"]);
+  assert.deepEqual(adminWorkflowActionsForPublish("published"), ["publish"]);
 });
 
 test("product detail route remains dynamic for CMS slugs", () => {

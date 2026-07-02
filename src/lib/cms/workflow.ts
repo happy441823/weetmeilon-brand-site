@@ -127,6 +127,31 @@ export function validatePublishQuality(resource: string, row: Record<string, unk
   throw new WorkflowError("该资源不支持发布校验。", 400);
 }
 
+function hasText(value: unknown) {
+  return String(value || "").trim().length > 0;
+}
+
+export function buildProductPublishVisibilityPatch(row: Record<string, unknown> | null | undefined) {
+  const hasTmallUrl = hasText(row?.tmall_url);
+  const hasJdUrl = hasText(row?.jd_url);
+  const patch: Record<string, unknown> = {
+    visible_catalog: 1,
+    indexable: 1
+  };
+
+  if (hasTmallUrl) {
+    patch.tmall_enabled = 1;
+  }
+  if (hasJdUrl) {
+    patch.jd_enabled = 1;
+  }
+  if (hasTmallUrl || hasJdUrl) {
+    patch.buy_button_enabled = 1;
+  }
+
+  return patch;
+}
+
 export function canUseWorkflowAction(roles: CmsRole[], action: WorkflowAction) {
   const allowed = workflowTransitions[action].roles;
   return roles.includes("super_admin") || allowed.some((role) => roles.includes(role));

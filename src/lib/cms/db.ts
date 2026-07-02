@@ -2,7 +2,7 @@ import { getCmsDb, getCmsMediaBucket } from "./env";
 import { cmsBackupTables } from "./backup";
 import { getResourceConfig, type CmsField } from "./schema";
 import { assertAsciiKebabSlug, assertSafeUrl, markdownSourceToHtml, normalizeCmsFieldValue, normalizeJsonText, slugify } from "./validation";
-import { validatePublishQuality } from "./workflow";
+import { buildProductPublishVisibilityPatch, validatePublishQuality } from "./workflow";
 
 type QueryOptions = {
   q?: string;
@@ -332,6 +332,9 @@ export async function setWorkflowStatus(resource: string, id: string, status: st
       patch.published_by = actorId;
     }
     patch.reviewed_by = actorId;
+    if (resource === "products") {
+      Object.assign(patch, buildProductPublishVisibilityPatch(current));
+    }
   }
   if (status === "pending_review") {
     patch.reviewed_by = null;
