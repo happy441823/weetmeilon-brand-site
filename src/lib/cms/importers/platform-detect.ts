@@ -11,6 +11,8 @@ const allowedHosts = [
   "tmall.com",
   "detail.tmall.com",
   "taobao.com",
+  "item.taobao.com",
+  "world.taobao.com",
   "item.jd.com",
   "mall.jd.com",
   "3.cn",
@@ -31,6 +33,7 @@ function readProductId(url: URL, platform: ImportPlatform) {
   const candidates = [
     url.searchParams.get("id"),
     url.searchParams.get("itemId"),
+    url.searchParams.get("item_id"),
     url.searchParams.get("sku"),
     url.searchParams.get("skuId"),
     url.searchParams.get("wareId")
@@ -49,11 +52,11 @@ export function detectImportPlatform(input: string): PlatformDetection {
   try {
     url = new URL(input.trim());
   } catch {
-    throw new Error("请输入完整的 https 商品链接。");
+    throw new Error("请输入完整的 http/https 商品链接。");
   }
 
   if (!["https:", "http:"].includes(url.protocol)) {
-    throw new Error("只允许 http/https 商品链接。");
+    throw new Error("只允许导入 http/https 商品链接。");
   }
   if (url.protocol === "http:") {
     url.protocol = "https:";
@@ -79,9 +82,11 @@ export function detectImportPlatform(input: string): PlatformDetection {
 }
 
 export function parseUrlLines(input: string, maxUrls = 50) {
+  const urlPattern = /https?:\/\/[^\s"'<>，。；、]+/gi;
   const urls = input
     .split(/\r?\n/)
-    .map((line) => line.trim())
+    .flatMap((line) => line.match(urlPattern) || [line.trim()])
+    .map((line) => line.trim().replace(/[),.;，。；、]+$/g, ""))
     .filter(Boolean);
   const unique = Array.from(new Set(urls));
   if (unique.length > maxUrls) {
