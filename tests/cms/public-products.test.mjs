@@ -38,7 +38,7 @@ test("public products read from D1 and map coming soon without purchase buttons"
         jd_enabled: 1,
         jd_url: "https://example.com/jd",
         buy_button_enabled: 1,
-        links_verified: 1
+        links_verified: 0
       },
       {
         id: "p2",
@@ -60,6 +60,11 @@ test("public products read from D1 and map coming soon without purchase buttons"
   assert.equal(products.length, 2);
   assert.equal(products[0].status, "active");
   assert.equal(products[0].channelLinks.tmall.enabled, true);
+  assert.equal(products[0].channelLinks.tmall.verified, false);
+  assert.equal(products[0].channelLinks.tmall.url, "https://example.com/tmall");
+  assert.equal(products[0].channelLinks.jd.enabled, true);
+  assert.equal(products[0].channelLinks.jd.verified, false);
+  assert.equal(products[0].channelLinks.jd.url, "https://example.com/jd");
   assert.equal(products[1].status, "upcoming");
   assert.equal(products[1].channelLinks.tmall.enabled, false);
   assert.equal(products[1].channelLinks.jd.enabled, false);

@@ -59,6 +59,32 @@ function hasVerifiedChannel(product: CatalogProduct) {
   });
 }
 
+function isSafeChannelUrl(url: string | null) {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function hasPublicChannel(product: CatalogProduct) {
+  return (["tmall", "jd"] as StoreChannel[]).some((channel) => {
+    const link = product.channelLinks[channel];
+    return link.enabled && isSafeChannelUrl(link.url);
+  });
+}
+
+function publicChannelLink(link: CatalogChannelLink) {
+  return link.enabled && isSafeChannelUrl(link.url)
+    ? link
+    : { ...link, enabled: false, url: null, verified: false };
+}
+
 function withPublishStatus(product: CatalogProduct): CatalogProduct {
   if (product.status === "upcoming") {
     return {
@@ -90,7 +116,7 @@ function withPublishStatus(product: CatalogProduct): CatalogProduct {
   if (!hasApprovedLocalImage(product)) {
     issues.push("缺少 approved 官网主图");
   }
-  if (!hasVerifiedChannel(product)) {
+  if (!hasPublicChannel(product)) {
     issues.push("缺少已验证购买链接");
   }
   if (!product.displayName && !product.name) {
@@ -122,7 +148,7 @@ function withPublishStatus(product: CatalogProduct): CatalogProduct {
     publishReady,
     publishIssues: issues,
     imageStatus: product.imageStatus || (hasApprovedLocalImage(product) ? "ready" : "missing"),
-    linkStatus: product.linkStatus || (hasVerifiedChannel(product) ? "verified" : "missing"),
+    linkStatus: product.linkStatus || (hasVerifiedChannel(product) ? "verified" : hasPublicChannel(product) ? "partial" : "missing"),
     contentStatus: product.contentStatus || "needs-review",
     visualAssetStatus: product.visualAssetStatus || (hasApprovedLocalImage(product) ? "composited" : "pending"),
     manualReviewed: product.manualReviewed ?? false,
@@ -152,12 +178,8 @@ function isPublicProduct(product: CatalogProduct) {
 
 function publicLinkSet(product: CatalogProduct) {
   return {
-    tmall: product.channelLinks.tmall.enabled && product.channelLinks.tmall.verified
-      ? product.channelLinks.tmall
-      : { ...product.channelLinks.tmall, enabled: false, url: null, verified: false },
-    jd: product.channelLinks.jd.enabled && product.channelLinks.jd.verified
-      ? product.channelLinks.jd
-      : { ...product.channelLinks.jd, enabled: false, url: null, verified: false }
+    tmall: publicChannelLink(product.channelLinks.tmall),
+    jd: publicChannelLink(product.channelLinks.jd)
   };
 }
 
