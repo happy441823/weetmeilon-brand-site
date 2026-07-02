@@ -7,6 +7,7 @@ import {
   getAdminJsonFormError,
   getAdminSlugFieldError,
   getAdminPagination,
+  normalizeAdminProductSlug,
   normalizeGalleryJson,
   normalizeSpecRowsJson,
   normalizeStringArrayJson,
@@ -42,11 +43,21 @@ test("admin UI validates only structured product JSON fields present in the save
 });
 
 test("admin UI blocks invalid product slugs before saving", () => {
-  assert.match(getAdminSlugFieldError("products", { slug: "安心入门自动名器体验款" }), /Slug format is invalid/);
-  assert.match(getAdminSlugFieldError("products", { slug: "Half Body" }), /Slug format is invalid/);
+  assert.match(getAdminSlugFieldError("products", { slug: "安心入门自动名器体验款" }), /Slug 格式不正确/);
+  assert.match(getAdminSlugFieldError("products", { slug: "Half Body" }), /Slug 格式不正确/);
   assert.equal(getAdminSlugFieldError("products", { slug: "automatic-cup-974064324737" }), "");
   assert.equal(getAdminSlugFieldError("articles", { slug: "中文文章" }), "");
   assert.equal(getAdminSlugFieldError("products", { name: "Only changing a title" }), "");
+});
+
+test("admin UI normalizes product slugs before saving", () => {
+  assert.equal(normalizeAdminProductSlug(" Tmall_1055096918525 "), "tmall-1055096918525");
+  assert.equal(
+    normalizeAdminProductSlug("https://detail.tmall.com/item.htm?id=1055096918525&spm=test"),
+    "tmall-1055096918525"
+  );
+  assert.equal(normalizeAdminProductSlug("Half Body 1055096918525"), "half-body-1055096918525");
+  assert.equal(buildAdminSavePayload("products", { slug: " Tmall_1055096918525 " }).slug, "tmall-1055096918525");
 });
 
 test("product detail route remains dynamic for CMS slugs", () => {

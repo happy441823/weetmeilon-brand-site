@@ -85,6 +85,9 @@ export function resourceItemKey(row: Record<string, unknown>, config?: Pick<Reso
 export function buildAdminSavePayload(resource: string, form: Record<string, unknown>) {
   const payload = { ...form };
   if (resource === "products") {
+    if (Object.hasOwn(payload, "slug")) {
+      payload.slug = normalizeAdminProductSlug(payload.slug);
+    }
     for (const name of Object.keys(productStructuredJsonFieldLabels)) {
       if (!Object.hasOwn(payload, name)) continue;
       if (name === "gallery_json") {
@@ -107,6 +110,19 @@ export function buildAdminSavePayload(resource: string, form: Record<string, unk
 
 export function pickDirtyAdminFields(form: Record<string, unknown>, dirtyFields: Iterable<string>) {
   return Object.fromEntries(Array.from(dirtyFields).filter((key) => Object.hasOwn(form, key)).map((key) => [key, form[key]]));
+}
+
+export function normalizeAdminProductSlug(value: unknown) {
+  const raw = String(value ?? "").trim().toLowerCase();
+  const tmallId = raw.match(/[?&]id=(\d{6,})/)?.[1] || raw.match(/\btmall[\s_-]*(\d{6,})\b/)?.[1];
+  if (tmallId) return `tmall-${tmallId}`;
+  return raw
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function parseJsonValue(value: unknown) {
@@ -233,9 +249,9 @@ export function getAdminJsonFormError(resource: string, form: Record<string, unk
 export function getAdminSlugFieldError(resource: string, form: Record<string, unknown>) {
   if (resource !== "products" || !Object.hasOwn(form, "slug")) return "";
   const slug = String(form.slug || "").trim();
-  if (!slug) return "Slug cannot be empty. Use lowercase letters, numbers, and hyphens.";
+  if (!slug) return "Slug 不能为空。请使用小写英文字母、数字和短横线，例如 tmall-1055096918525。";
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    return "Slug format is invalid. Use lowercase letters, numbers, and hyphens, for example automatic-cup-974064324737.";
+    return "Slug 格式不正确。请使用小写英文字母、数字和短横线，例如 tmall-1055096918525。";
   }
   return "";
 }
@@ -491,6 +507,11 @@ export function AdminCmsClient({ initialResource = "dashboard", initialItemId = 
         if (selected && Object.keys(payloadSource).length === 0) {
           setMessage("没有需要保存的修改。");
           return;
+        }
+        if (resource === "products" && Object.hasOwn(payloadSource, "slug")) {
+          const normalizedSlug = normalizeAdminProductSlug(payloadSource.slug);
+          payloadSource.slug = normalizedSlug;
+          if (normalizedSlug !== form.slug) setForm((current) => ({ ...current, slug: normalizedSlug }));
         }
         const slugError = getAdminSlugFieldError(resource, payloadSource);
         if (slugError) {
@@ -1088,10 +1109,12 @@ function ProductEditorPanel({
     if (name === "specifications_json") {
       return <SpecRowsJsonEditor key={name} field={field} value={form[name]} onChange={(value) => setField(name, value)} />;
     }
+    const writeField = (value: unknown) => setField(name, name === "slug" ? normalizeAdminProductSlug(value) : value);
     return (
       <label key={name} className="grid gap-1.5">
         <span className="text-xs font-black text-white/58">{field.label}{field.required ? " *" : ""}</span>
-        <FieldControl field={field} value={form[name]} onChange={(value) => setField(name, value)} />
+        <FieldControl field={field} value={form[name]} onChange={writeField} />
+        {name === "slug" ? <span className="text-[11px] font-bold leading-5 text-white/45">只允许小写英文、数字和短横线；粘贴天猫链接会自动提取商品 ID。</span> : null}
       </label>
     );
   }
