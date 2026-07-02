@@ -10,6 +10,9 @@ export type ImportPreviewInput = {
   productName?: string;
   category?: string;
   series?: string;
+  primaryCategoryId?: string;
+  subcategoryId?: string;
+  seriesId?: string;
   notes?: string;
   html?: string;
   fetchPublicMetadata?: boolean;
@@ -25,6 +28,9 @@ export type ImportDraftSuggestion = {
   seoDescription: string;
   imageAlt: string;
   galleryJson: string[];
+  primaryCategoryId: string;
+  subcategoryId: string;
+  seriesId: string;
   status: "draft";
   indexable: false;
   visibleCatalog: false;
@@ -44,6 +50,49 @@ export type ImportPreviewItem = {
   metadata: ProductMetadata | null;
   draft: ImportDraftSuggestion | null;
 };
+
+const DEFAULT_IMPORT_TAXONOMY = {
+  primaryCategoryId: "intimate-molds",
+  subcategoryId: "tpe-hip-mold",
+  seriesId: "hip-mold-series"
+};
+
+const ALLOWED_PRIMARY_CATEGORY_IDS = new Set(["intimate-molds", "realistic-dolls", "masturbator-cups"]);
+const ALLOWED_SUBCATEGORY_IDS = new Set([
+  "tpe-hip-mold",
+  "tpe-half-body",
+  "tpe-leg-mold",
+  "tpe-local-mold",
+  "silicone-hip-mold",
+  "silicone-half-body",
+  "silicone-local-mold",
+  "tpe-realistic-dolls",
+  "silicone-realistic-dolls",
+  "masturbator-cup"
+]);
+const ALLOWED_SERIES_IDS = new Set([
+  "hip-mold-series",
+  "half-body-doll-series",
+  "silicone-mold-series",
+  "realistic-doll-series",
+  "masturbator-cup-series"
+]);
+
+export function normalizeImportTaxonomy(
+  input: Pick<ImportPreviewInput, "primaryCategoryId" | "subcategoryId" | "seriesId"> = {}
+) {
+  return {
+    primaryCategoryId:
+      input.primaryCategoryId && ALLOWED_PRIMARY_CATEGORY_IDS.has(input.primaryCategoryId)
+        ? input.primaryCategoryId
+        : DEFAULT_IMPORT_TAXONOMY.primaryCategoryId,
+    subcategoryId:
+      input.subcategoryId && ALLOWED_SUBCATEGORY_IDS.has(input.subcategoryId)
+        ? input.subcategoryId
+        : DEFAULT_IMPORT_TAXONOMY.subcategoryId,
+    seriesId: input.seriesId && ALLOWED_SERIES_IDS.has(input.seriesId) ? input.seriesId : DEFAULT_IMPORT_TAXONOMY.seriesId
+  };
+}
 
 function parseCsvRows(csv: string) {
   const lines = csv.split(/\r?\n/).filter((line) => line.trim());
@@ -88,7 +137,7 @@ function sourceUrlsFromInput(input: ImportPreviewInput) {
 
 function cleanTitle(value: string) {
   return value
-    .replace(/\s*[-_|｜–—]\s*(天猫|淘宝|京东|Tmall|Taobao|JD).*$/i, "")
+    .replace(/\s*[-_|｜]\s*(天猫|淘宝|京东|Tmall|Taobao|JD).*$/i, "")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 48);
@@ -105,8 +154,12 @@ export function buildImportDraftSuggestion(input: {
   sourceProductId: string | null;
   titleDetected?: string | null;
   metadata?: ProductMetadata | null;
+  primaryCategoryId?: string;
+  subcategoryId?: string;
+  seriesId?: string;
 }): ImportDraftSuggestion | null {
   if (!["tmall", "jd"].includes(input.platform)) return null;
+  const taxonomy = normalizeImportTaxonomy(input);
   const productId = draftId(input.platform, input.sourceProductId);
   const fallbackName = input.platform === "tmall" ? "天猫待审核商品" : "京东待审核商品";
   const name = cleanTitle(input.titleDetected || "") || fallbackName;
@@ -115,7 +168,6 @@ export function buildImportDraftSuggestion(input: {
     productId ||
     slugify(name) ||
     crypto.randomUUID();
-  const channelName = input.platform === "tmall" ? "天猫官方旗舰店" : "京东官方旗舰店";
   const summary = "由商品链接导入助手创建的待审核草稿。请人工确认分类、材质、图片授权、正文文案和 SEO 后，再提交审核或发布。";
 
   return {
@@ -128,6 +180,9 @@ export function buildImportDraftSuggestion(input: {
     seoDescription: `了解${name}的产品类型、材质方向、清洁收纳与隐私购买说明。正式展示前请人工复核具体规格、发货和售后信息。`,
     imageAlt: `蜜女郎${name}待审核商品图`,
     galleryJson: input.metadata?.imageUrls || [],
+    primaryCategoryId: taxonomy.primaryCategoryId,
+    subcategoryId: taxonomy.subcategoryId,
+    seriesId: taxonomy.seriesId,
     status: "draft",
     indexable: false,
     visibleCatalog: false,
@@ -169,7 +224,10 @@ export function previewImportInput(input: ImportPreviewInput, maxUrls = 50): Imp
           platform: detected.platform,
           sourceProductId: detected.productId,
           titleDetected,
-          metadata
+          metadata,
+          primaryCategoryId: input.primaryCategoryId,
+          subcategoryId: input.subcategoryId,
+          seriesId: input.seriesId
         })
       };
     } catch (error) {
@@ -203,7 +261,10 @@ export async function previewImportInputWithPublicMetadata(input: ImportPreviewI
         platform: item.platform,
         sourceProductId: item.sourceProductId,
         titleDetected: item.titleDetected,
-        metadata
+        metadata,
+        primaryCategoryId: input.primaryCategoryId,
+        subcategoryId: input.subcategoryId,
+        seriesId: input.seriesId
       });
     } catch (error) {
       item.errors.push(error instanceof Error ? error.message : "公开 metadata 读取失败。");
@@ -218,6 +279,7 @@ export async function createImportJobs(input: ImportPreviewInput, actorId: strin
   const items = await previewImportInputWithPublicMetadata(input, Number(process.env.CMS_IMPORT_MAX_URLS_PER_BATCH || 50));
   const now = new Date().toISOString();
   const created: string[] = [];
+  const createdJobs: { id: string; sourceUrl: string }[] = [];
   for (const item of items) {
     if (item.errors.length > 0) continue;
     const status = item.authorized ? "needs_review" : "draft";
@@ -263,6 +325,8 @@ export async function createImportJobs(input: ImportPreviewInput, actorId: strin
       )
       .run();
     created.push(item.sourceUrl);
+    const savedJob = await db.prepare("SELECT id FROM import_jobs WHERE source_url = ?").bind(item.sourceUrl).first<{ id: string }>();
+    if (savedJob?.id) createdJobs.push({ id: savedJob.id, sourceUrl: item.sourceUrl });
   }
-  return { created, skipped: items.filter((item) => item.errors.length > 0), total: items.length };
+  return { created, createdJobs, skipped: items.filter((item) => item.errors.length > 0), total: items.length };
 }

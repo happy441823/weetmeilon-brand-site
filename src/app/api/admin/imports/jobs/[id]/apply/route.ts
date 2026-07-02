@@ -97,17 +97,20 @@ export async function POST(request: Request, { params }: Params) {
       await db
         .prepare(
           `INSERT INTO products
-            (id, name, short_name, slug, status, sort_order, featured, visible_home, visible_catalog,
+            (id, name, short_name, slug, primary_category_id, subcategory_id, series_id, status, sort_order, featured, visible_home, visible_catalog,
              summary, body_html, highlights_json, specifications_json, material_notes, care_notes, storage_notes,
              privacy_notes, compliance_notes, image_alt, gallery_json, seo_title, seo_description,
              tmall_url, jd_url, tmall_enabled, jd_enabled, buy_button_enabled, links_verified, indexable, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .bind(
           targetId,
           draft.name,
           draft.shortName,
           draft.slug,
+          draft.primaryCategoryId,
+          draft.subcategoryId,
+          draft.seriesId,
           "draft",
           999,
           0,

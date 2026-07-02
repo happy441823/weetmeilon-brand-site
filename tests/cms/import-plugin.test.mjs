@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { detectImportPlatform, parseUrlLines } from "../../src/lib/cms/importers/platform-detect.ts";
 import { extractPublicMetadata } from "../../src/lib/cms/importers/metadata-fetcher.ts";
-import { buildImportDraftSuggestion, previewImportInput } from "../../src/lib/cms/importers/import-job.ts";
+import { buildImportDraftSuggestion, normalizeImportTaxonomy, previewImportInput } from "../../src/lib/cms/importers/import-job.ts";
 import { assertImportImageAllowed, safeImportedFileName } from "../../src/lib/cms/importers/image-normalizer.ts";
 import { sanitizeCreatePayload, sanitizeUpdatePayload } from "../../src/lib/cms/workflow.ts";
 
@@ -82,11 +82,48 @@ test("buildImportDraftSuggestion creates a safe non-public draft", () => {
   assert.equal(draft.productId, "tmall-123456");
   assert.equal(draft.name, "柔感半身款");
   assert.equal(draft.status, "draft");
+  assert.equal(draft.primaryCategoryId, "intimate-molds");
+  assert.equal(draft.subcategoryId, "tpe-hip-mold");
+  assert.equal(draft.seriesId, "hip-mold-series");
   assert.equal(draft.indexable, false);
   assert.equal(draft.visibleCatalog, false);
   assert.equal(draft.buyButtonEnabled, false);
   assert.equal(draft.tmallEnabled, false);
   assert.deepEqual(draft.galleryJson, ["https://img.alicdn.com/imgextra/i1/demo.jpg"]);
+});
+
+test("previewImportInput applies selected catalog taxonomy", () => {
+  const preview = previewImportInput({
+    urls: "https://item.jd.com/100.html",
+    authorized: true,
+    primaryCategoryId: "masturbator-cups",
+    subcategoryId: "masturbator-cup",
+    seriesId: "masturbator-cup-series",
+  });
+
+  assert.equal(preview.length, 1);
+  assert.equal(preview[0].draft.primaryCategoryId, "masturbator-cups");
+  assert.equal(preview[0].draft.subcategoryId, "masturbator-cup");
+  assert.equal(preview[0].draft.seriesId, "masturbator-cup-series");
+  assert.equal(preview[0].draft.status, "draft");
+  assert.equal(preview[0].draft.indexable, false);
+  assert.equal(preview[0].draft.visibleCatalog, false);
+  assert.equal(preview[0].draft.buyButtonEnabled, false);
+});
+
+test("normalizeImportTaxonomy rejects invalid category values", () => {
+  assert.deepEqual(
+    normalizeImportTaxonomy({
+      primaryCategoryId: "bad-primary",
+      subcategoryId: "bad-subcategory",
+      seriesId: "bad-series",
+    }),
+    {
+      primaryCategoryId: "intimate-molds",
+      subcategoryId: "tpe-hip-mold",
+      seriesId: "hip-mold-series",
+    }
+  );
 });
 
 test("previewImportInput keeps invalid links as errors and requires authorization", () => {

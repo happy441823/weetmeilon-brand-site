@@ -14,6 +14,9 @@ export async function POST(request: Request) {
         productName: typeof body.product_name === "string" ? body.product_name : "",
         category: typeof body.category === "string" ? body.category : "",
         series: typeof body.series === "string" ? body.series : "",
+        primaryCategoryId: typeof body.primary_category_id === "string" ? body.primary_category_id : "",
+        subcategoryId: typeof body.subcategory_id === "string" ? body.subcategory_id : "",
+        seriesId: typeof body.series_id === "string" ? body.series_id : "",
         notes: typeof body.notes === "string" ? body.notes : "",
         fetchPublicMetadata: body.fetch_public_metadata === true
       },
