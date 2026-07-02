@@ -40,7 +40,7 @@ function getChannelLabel(channel: StoreChannel, label: string, source: string) {
     return channel === "tmall" ? "天猫旗舰店" : "京东旗舰店";
   }
 
-  return label;
+  return label || (channel === "tmall" ? "天猫官方旗舰店" : "京东官方旗舰店");
 }
 
 export function ProductChannelButtons({
@@ -51,7 +51,7 @@ export function ProductChannelButtons({
 }: ProductChannelButtonsProps) {
   const channels = channelOrder
     .map((channel) => ({ channel, link: product.channelLinks[channel] }))
-    .filter(({ link }) => link.enabled && link.verified && isValidProductHref(link.url));
+    .filter(({ link }) => link.enabled && isValidProductHref(link.url));
 
   if (channels.length === 0) {
     return null;
